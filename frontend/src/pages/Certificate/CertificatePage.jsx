@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/common/Button';
 import { Share2, Download, ArrowLeft, Linkedin, Twitter, Facebook, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { API_BASE } from '@/lib/api';
 
 const PrintableCertificate = ({ data, user }) => (
   <div className="hidden print:block fixed inset-0 z-[9999] h-screen w-screen overflow-hidden bg-white text-black">
@@ -69,7 +70,7 @@ export default function CertificatePage() {
         const token = sessionStorage.getItem('auth_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         // Fetch certificate data
-        const response = await fetch(`/api/certificates/${courseId}`, { headers });
+        const response = await fetch(`\${API_BASE}/api/certificates/${courseId}`,  { headers });
         if (!response.ok) {
           throw new Error(response.status === 403
             ? 'You must complete this course to view the certificate'
@@ -81,7 +82,7 @@ export default function CertificatePage() {
         // Register / retrieve the persistent certificate ID for verification
         if (token) {
           try {
-            const issueRes = await fetch(`/api/certificates/${courseId}/issue`, {
+            const issueRes = await fetch(`\${API_BASE}/api/certificates/${courseId}/issue`,  {
               method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
             });
             if (issueRes.ok) {
