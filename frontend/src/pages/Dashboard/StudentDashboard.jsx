@@ -10,6 +10,7 @@ import {
   ArrowRight, ChevronDown, ChevronUp, Book
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { API_BASE } from '@/lib/api';
 
 const StatsCard   = lazy(() => import('@/components/dashboard/StatsCard'));
 const ProgressCard = lazy(() => import('@/components/dashboard/ProgressCard'));
@@ -37,7 +38,7 @@ async function registerBadge(badge) {
   const token = sessionStorage.getItem('auth_token');
   if (!token) return null;
   try {
-    const res = await fetch('/api/badges/issue', {
+    const res = await fetch(`\${API_BASE}/api/badges/issue`,  {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ badge_key: badge.key, badge_title: badge.title })
