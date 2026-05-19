@@ -6,6 +6,7 @@ import { Card } from '@/components/common/Card';
 import { QuizQuestion } from '@/components/quiz/QuizQuestion';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export function QuizPage() {
   const { courseId, lessonId } = useParams();
@@ -30,8 +31,8 @@ export function QuizPage() {
         const token = sessionStorage.getItem('auth_token');
         const headers = token ? { Authorization: 'Bearer ' + token } : {};
         const [quizRes, courseRes] = await Promise.all([
-          fetch(`/api/courses/${courseId}/quizzes/${lessonId}`, { headers }),
-          fetch(`/api/courses/${courseId}`, { headers })
+          fetch(`\${API_BASE}/api/courses/${courseId}/quizzes/${lessonId}`,  { headers }),
+          fetch(`\${API_BASE}/api/courses/${courseId}`,  { headers })
         ]);
         if (!quizRes.ok) throw new Error((await quizRes.json()).error || 'Quiz not found');
         const quizData = await quizRes.json();
@@ -89,7 +90,7 @@ export function QuizPage() {
     setIsSubmitting(true);
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch('/api/quizzes/submit', {
+      const response = await fetch(`\${API_BASE}/api/quizzes/submit`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) },
         body: JSON.stringify({ quiz_id: quiz.id, answers, course_id: courseId, lesson_id: lessonId })
