@@ -5,6 +5,7 @@ import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 // ── Inline printable certificate ──────────────────────────────────────────
 function InlineCertificate({ certData, user }) {
@@ -84,10 +85,10 @@ export function QuizResultsPage() {
     const token = sessionStorage.getItem('auth_token');
     const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     // Issue (idempotent) then fetch display data
-    fetch(`/api/certificates/${courseId}/issue`, { method: 'POST', headers: h })
+    fetch(`\${API_BASE}/api/certificates/${courseId}/issue`,  { method: 'POST', headers: h })
       .then(r => r.json())
       .then(async issueData => {
-        const r2 = await fetch(`/api/certificates/${courseId}`, { headers: h });
+        const r2 = await fetch(`\${API_BASE}/api/certificates/${courseId}`,  { headers: h });
         const d2 = await r2.json();
         const cert = d2.certificate || {};
         cert.certificateId = issueData.cert_id || cert.certificateId;
