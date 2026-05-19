@@ -11,6 +11,7 @@ import { Badge } from '@/components/common/Badge';
 import CourseCard from '@/components/course/CourseCard';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
+import { API_BASE } from '@/lib/api';
 
 // ── Section Accordion ──────────────────────────────────────────────────────
 function SectionAccordion({ section, course, sectionIndex, allLessons }) {
@@ -115,7 +116,7 @@ export function CourseDetailPage() {
       setIsLoading(true);
       try {
         const token = sessionStorage.getItem('auth_token');
-        const res = await fetch(`/api/courses/${courseId}`,
+        const res = await fetch(`\${API_BASE}/api/courses/${courseId}`, 
           { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) throw new Error('Not found');
         setCourse((await res.json()).course);
@@ -127,7 +128,7 @@ export function CourseDetailPage() {
 
   // Fetch real reviews
   useEffect(() => {
-    fetch(`/api/courses/${courseId}/reviews`)
+    fetch(`\${API_BASE}/api/courses/${courseId}/reviews`)
       .then(r => r.json()).then(d => setReviews(d.reviews || [])).catch(() => {});
   }, [courseId, reviewDone]);
 
@@ -207,7 +208,7 @@ export function CourseDetailPage() {
     setIsSubmitting(true); setReviewError('');
     try {
       const token = sessionStorage.getItem('auth_token');
-      const res = await fetch(`/api/courses/${courseId}/reviews`, {
+      const res = await fetch(`\${API_BASE}/api/courses/${courseId}/reviews`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rating: selectedRating, content: reviewText.trim() }),
