@@ -10,6 +10,7 @@ import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
+import { API_BASE } from '@/lib/api';
 
 // ── Mini course card for landing ──────────────────────────────────────────
 const CourseCard = ({ course }) => (
@@ -53,7 +54,7 @@ function VerifySection() {
     if (!credId.trim()) return;
     setLoading(true); setResult(null); setSearched(false);
     try {
-      const res  = await fetch(`/api/verify?id=${encodeURIComponent(credId.trim())}`);
+      const res  = await fetch(`\${API_BASE}/api/verify?id=${encodeURIComponent(credId.trim())}`);
       const data = await res.json();
       setResult(data);
     } catch {
@@ -566,7 +567,7 @@ function CommentsSection({ user, isAuthenticated }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/homepage/comments');
+      const r = await fetch(`\${API_BASE}/api/homepage/comments`);
       const d = await r.json();
       setComments(d.comments||[]);
     } catch {}
@@ -625,7 +626,7 @@ function CommentsSection({ user, isAuthenticated }) {
     if(!text.trim()) return;
     setPosting(true); setError('');
     try {
-      const r = await fetch('/api/homepage/comments', {
+      const r = await fetch(`\${API_BASE}/api/homepage/comments`,  {
         method:'POST', headers:headers(),
         body: JSON.stringify({content:text.trim()})
       });
@@ -640,7 +641,7 @@ function CommentsSection({ user, isAuthenticated }) {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`/api/homepage/comments/${id}`,{method:'DELETE',headers:headers(false)});
+      await fetch(`\${API_BASE}/api/homepage/comments/${id}`, {method:'DELETE',headers:headers(false)});
       setComments(prev=>prev
         .filter(c=>c.id!==id)
         .map(c=>({...c,replies:(c.replies||[]).filter(r=>r.id!==id)}))
@@ -649,7 +650,7 @@ function CommentsSection({ user, isAuthenticated }) {
   };
 
   const handleEdit = async (id, content) => {
-    const r = await fetch(`/api/homepage/comments/${id}`,{
+    const r = await fetch(`\${API_BASE}/api/homepage/comments/${id}`, {
       method:'PUT', headers:headers(),
       body:JSON.stringify({content})
     });
@@ -662,7 +663,7 @@ function CommentsSection({ user, isAuthenticated }) {
   };
 
   const handleLike = async (id) => {
-    const r = await fetch(`/api/homepage/comments/${id}/like`,{method:'POST',headers:headers(false)});
+    const r = await fetch(`\${API_BASE}/api/homepage/comments/${id}/like`, {method:'POST',headers:headers(false)});
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Failed');
     setComments(prev=>prev.map(c=>{
@@ -672,7 +673,7 @@ function CommentsSection({ user, isAuthenticated }) {
   };
 
   const handleReply = async (parentId, content) => {
-    const r = await fetch('/api/homepage/comments',{
+    const r = await fetch(`\${API_BASE}/api/homepage/comments`, {
       method:'POST', headers:headers(),
       body:JSON.stringify({content, parent_id:parentId})
     });
