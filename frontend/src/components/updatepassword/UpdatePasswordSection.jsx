@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../../components/common/Button';
 import { Loader2, ShieldCheck, Eye, EyeOff, Lock, X } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 
 export default function UpdatePasswordSection({ onCancel, onSuccess }) {
   const [showPasswords, setShowPasswords] = useState(false);
@@ -27,7 +28,7 @@ export default function UpdatePasswordSection({ onCancel, onSuccess }) {
     setIsUpdating(true);
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch('/api/users/change-password', {
+      const response = await fetch(`\${API_BASE}/api/users/change-password`,  {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
