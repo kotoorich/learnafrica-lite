@@ -1,0 +1,24 @@
+# Web framework
+flask==2.3.3
+flask-socketio==5.3.4
+flask-cors==4.0.0
+
+# WebSocket support
+python-socketio==5.9.0
+eventlet==0.36.1
+
+# Production server
+gunicorn==21.2.0
+
+# Authentication
+pyjwt==2.8.0
+werkzeug==2.3.7
+
+# PostgreSQL (Neon)
+psycopg2-binary==2.9.9
+
+# HTTP requests (for Supabase Storage uploads)
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
