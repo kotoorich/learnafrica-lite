@@ -8,6 +8,7 @@ import { useCurriculum } from '@/lib/useCurriculum';
 import { CurriculumSection } from './CurriculumSection';
 import { useAuth } from '@/context/AuthContext';
 import { ImageUpload } from '@/components/common/ImageUpload';
+import { API_BASE } from '@/lib/api';
 
 const PRESET_CATEGORIES = [
   'Web Development','Data Science','Mobile Development','Marketing',
@@ -135,7 +136,7 @@ export function CreateCoursePage() {
         })),
       };
 
-      const res = await fetch('/api/instructor/courses', {
+      const res = await fetch(`\${API_BASE}/api/instructor/courses`,  {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -153,7 +154,7 @@ export function CreateCoursePage() {
       const courseId = respData.course_id;
       if (courseId) {
         // Fetch the created course to get real lesson IDs
-        const courseRes = await fetch(`/api/instructor/courses/${courseId}`, {
+        const courseRes = await fetch(`\${API_BASE}/api/instructor/courses/${courseId}`,  {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (courseRes.ok) {
