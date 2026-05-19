@@ -10,8 +10,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // In production, all /api/* calls go to VITE_API_URL (your Railway backend)
-  // In dev, they proxy to localhost:5000
   server: {
     proxy: {
       '/api': {
@@ -32,13 +30,5 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['lucide-react', 'recharts'],
-        },
-      },
-    },
   },
 })
