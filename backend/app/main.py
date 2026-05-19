@@ -1590,7 +1590,7 @@ def create_app() -> Flask:
     @app.route('/api/admin/users/<uid>', methods=['DELETE'])
     @admin_required
     def admin_delete_user(uid):
-        import os
+        pass  # os imported at top
         db = get_db()
         target = db.execute('SELECT role, email FROM users WHERE id=?', (uid,)).fetchone()
         if not target: return jsonify({'error': 'Not found'}), 404
@@ -2172,7 +2172,7 @@ def create_app() -> Flask:
         Credentials come from environment variables with safe defaults for development.
         This account cannot be deleted via the admin panel.
         """
-        import os
+        pass  # os imported at top
         admin_email    = os.environ.get('ADMIN_EMAIL',    os.environ.get('ADMIN_EMAIL', 'admin@learnafrica.com')).lower()
         admin_password = os.environ.get('ADMIN_PASSWORD', os.environ.get('ADMIN_PASSWORD', 'Admin@LearnAfrica2024!'))
         admin_name     = os.environ.get('ADMIN_NAME',     'Platform Administrator')
@@ -2562,7 +2562,7 @@ def create_app() -> Flask:
     if __name__ == '__main__':
         ensure_default_admin()
         seed_courses()
-        import os
+        pass  # os imported at top
         admin_email    = os.environ.get('ADMIN_EMAIL',    os.environ.get('ADMIN_EMAIL', 'admin@learnafrica.com'))
         admin_password = os.environ.get('ADMIN_PASSWORD', os.environ.get('ADMIN_PASSWORD', 'Admin@LearnAfrica2024!'))
         demo_password  = 'Password123!'
