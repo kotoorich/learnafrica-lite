@@ -6,6 +6,7 @@ import { Card } from '@/components/common/Card';
 import { Input, Label } from '@/components/common/Input';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 function formatCardNumber(v) {
   return v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
@@ -34,7 +35,7 @@ export default function PaymentPage() {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const res = await fetch(`/api/courses/${courseId}`);
+        const res = await fetch(`\${API_BASE}/api/courses/${courseId}`);
         const data = await res.json();
         if (!res.ok || data.course?.is_free) {
           navigate(`/courses/${courseId}`, { replace: true }); return;
@@ -42,7 +43,7 @@ export default function PaymentPage() {
         setCourse(data.course);
         // Initiate payment on the server
         const token = sessionStorage.getItem('auth_token');
-        const pres = await fetch('/api/payments/initiate', {
+        const pres = await fetch(`\${API_BASE}/api/payments/initiate`,  {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ course_id: courseId }),
@@ -85,7 +86,7 @@ export default function PaymentPage() {
     setError('');
     try {
       const token = sessionStorage.getItem('auth_token');
-      const res = await fetch('/api/payments/confirm', {
+      const res = await fetch(`\${API_BASE}/api/payments/confirm`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
