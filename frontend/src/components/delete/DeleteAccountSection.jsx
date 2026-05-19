@@ -3,6 +3,7 @@ import { Button } from '../../components/common/Button';
 import { Loader2, AlertTriangle, Trash2, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '@/lib/api';
 
 export default function DeleteAccountSection({ userEmail, onCancel }) {
   const [confirmEmail, setConfirmEmail] = useState('');
@@ -20,7 +21,7 @@ export default function DeleteAccountSection({ userEmail, onCancel }) {
     setError('');
     try {
       const token = sessionStorage.getItem('auth_token');
-      const response = await fetch('/api/users/account', {
+      const response = await fetch(`\${API_BASE}/api/users/account`,  {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
