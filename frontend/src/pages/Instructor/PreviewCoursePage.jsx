@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { cn } from '@/lib/utils';
+import { API_BASE } from '@/lib/api';
 
 // ── helpers ───────────────────────────────────────────────────────────────
 const getEmbedUrl = (url) => {
@@ -150,7 +151,7 @@ function PreviewQuiz({ courseId, lessonId }) {
 
   useEffect(() => {
     const token = sessionStorage.getItem('auth_token');
-    fetch(`/api/courses/${courseId}/quizzes/${lessonId}`,
+    fetch(`\${API_BASE}/api/courses/${courseId}/quizzes/${lessonId}`, 
       { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then(r => r.ok ? r.json() : null)
       .then(d => setQuiz(d?.quiz || null))
