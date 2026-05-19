@@ -81,7 +81,7 @@ def create_app() -> Flask:
     CORS(app, origins=_origins, supports_credentials=True)
 
     # ── SocketIO ───────────────────────────────────────────────────────────────
-    _mode = 'gevent' if os.environ.get('FLASK_ENV') == 'production' else 'threading'
+    _mode = 'eventlet' if os.environ.get('FLASK_ENV') == 'production' else 'threading'
     socketio = SocketIO(app, cors_allowed_origins='*', async_mode=_mode)
 
     # ── Database teardown ──────────────────────────────────────────────────────
