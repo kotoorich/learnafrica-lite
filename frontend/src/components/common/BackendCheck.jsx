@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 
 export default function BackendCheck() {
   const [backendDown, setBackendDown] = useState(false);
@@ -12,7 +13,7 @@ export default function BackendCheck() {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
+        const res = await fetch(`\${API_BASE}/api/health`,  { signal: AbortSignal.timeout(3000) });
         setBackendDown(!res.ok);
       } catch {
         setBackendDown(true);
