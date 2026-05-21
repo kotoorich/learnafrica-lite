@@ -1,4 +1,4 @@
-replace the run.py with the whole code. first open the run.py first
+replace the run.py with the whole code. first open the run.py first and see how it is before you replace
 
 """
 run.py — Development server entry point.
