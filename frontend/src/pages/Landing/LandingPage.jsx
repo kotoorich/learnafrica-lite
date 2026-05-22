@@ -11,143 +11,188 @@ import { Card } from '@/components/common/Card';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { API_BASE } from '@/lib/api';
-
-// ── Mini course card for landing ──────────────────────────────────────────
-const CourseCard = ({ course }) => (
-  <Card className="overflow-hidden transition-all duration-300 group flex flex-col h-full bg-card hover:shadow-xl hover:scale-[1.02] cursor-pointer">
-    <Link to={`/courses/${course.id}`}>
-      <div className="relative aspect-video overflow-hidden bg-muted">
-        <img src={course.thumbnail || '/placeholder.jpg'} alt={course.title}
-          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
-        {course.is_free && (
-          <span className="absolute top-2 left-2 text-[10px] font-bold bg-success text-white px-2 py-0.5 rounded-full">Free</span>
-        )}
-      </div>
-    </Link>
-    <div className="p-4 flex flex-col flex-1">
-      <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">{course.category}</p>
-      <Link to={`/courses/${course.id}`}>
-        <h3 className="font-bold text-sm line-clamp-2 hover:text-primary transition-colors">{course.title}</h3>
-      </Link>
-      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 flex-1">{course.description}</p>
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Star className="h-3 w-3 fill-warning text-warning" />
-          {course.rating || '4.8'}
-        </div>
-        <div className="flex items-center gap-1"><Users className="h-3 w-3" />{course.enrollments || 0}</div>
-        <span className="font-bold text-foreground">{course.is_free ? 'Free' : `$${course.price}`}</span>
-      </div>
-    </div>
-  </Card>
-);
+import { Suspense } from 'react'
+import { CourseCardSkeleton } from '@/components/common/LoadingSkeleton'
+import CourseCard from '@/components/course/CourseCard';
 
 // ── Verify Credential ─────────────────────────────────────────────────────
-function VerifySection() {
-  const [credId,   setCredId]   = useState('');
-  const [result,   setResult]   = useState(null);
-  const [loading,  setLoading]  = useState(false);
+export default function VerifySection() {
+  const [credId, setCredId] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+
+  // --- TYPEWRITER EFFECT STATE ---
+  const [placeholder, setPlaceholder] = useState('');
+  const [textIndex, setTextIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // The pool of moving example strings you want to show
+  const placeholders = [
+    "e.g. LA-CERT-ABCD-1A2B3C",
+    "e.g. LA-BADGE-FIRS-4D5E6F",
+    "Enter a Certificate ID...",
+    "Enter an Achievement Badge ID..."
+  ];
+
+  // --- TYPEWRITER ENGINE ---
+  useEffect(() => {
+    const currentFullText = placeholders[textIndex];
+    let timer;
+
+    if (!isDeleting && charIndex < currentFullText.length) {
+      // Typing phase: add a character
+      timer = setTimeout(() => {
+        setPlaceholder((prev) => prev + currentFullText[charIndex]);
+        setCharIndex((prev) => prev + 1);
+      }, 100); // Speed of typing (ms per letter)
+    } else if (isDeleting && charIndex > 0) {
+      // Deleting phase: slice off a character
+      timer = setTimeout(() => {
+        setPlaceholder((prev) => prev.slice(0, -1));
+        setCharIndex((prev) => prev - 1);
+      }, 40); // Speed of erasing (ms per letter)
+    } else if (!isDeleting && charIndex === currentFullText.length) {
+      // End of string reached: pause before starting to delete
+      timer = setTimeout(() => setIsDeleting(true), 2000); // Pause time at full sentence
+    } else if (isDeleting && charIndex === 0) {
+      // String fully erased: move to the next item in the array
+      setIsDeleting(false);
+      setTextIndex((prev) => (prev + 1) % placeholders.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [charIndex, isDeleting, textIndex]);
+
 
   const handleVerify = async (e) => {
     e.preventDefault();
     if (!credId.trim()) return;
-    setLoading(true); setResult(null); setSearched(false);
+    setLoading(true); 
+    setResult(null); 
+    setSearched(false);
     try {
-      const res  = await fetch(`${API_BASE}/api/verify?id=${encodeURIComponent(credId.trim())}`);
+      const res = await fetch(`${API_BASE}/api/verify?id=${encodeURIComponent(credId.trim())}`);
       const data = await res.json();
       setResult(data);
     } catch {
       setResult({ valid: false, message: 'Verification service unavailable.' });
     }
-    setLoading(false); setSearched(true);
+    setLoading(false); 
+    setSearched(true);
   };
 
   const fmt = (s) => {
     if (!s) return '—';
-    try { return new Date(s).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }); }
-    catch { return s; }
+    try { 
+      return new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); 
+    } catch { 
+      return s; 
+    }
   };
 
   return (
-    <section id="verify-section" className="py-16 sm:py-20 bg-gradient-to-b from-background to-muted/20 border-t border-border">
+    <section id="verify-section" className="py-16 sm:py-24 bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto px-4 max-w-2xl">
-        <div className="text-center mb-8">
+        
+        {/* Header Section */}
+        <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
             <ShieldCheck className="h-7 w-7 text-primary" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold">Verify a Credential</h2>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Enter a certificate or badge ID to verify its authenticity.
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Verify a Credential</h2>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-md mx-auto">
+            Enter an official certificate or badge ID below to verify its regulatory authenticity.
           </p>
         </div>
 
-        <form onSubmit={handleVerify} className="flex gap-2 mb-6">
-          <input type="text" value={credId}
+        {/* Reconstructed Centered Form Layout */}
+        <form onSubmit={handleVerify} className="flex flex-col items-center gap-4 mb-8">
+          <input 
+            type="text" 
+            value={credId}
             onChange={e => { setCredId(e.target.value); setSearched(false); setResult(null); }}
-            placeholder="e.g. LA-CERT-ABCD-1A2B3C  or  LA-BADGE-FIRS-4D5E6F"
-            className="flex-1 h-12 rounded-xl border border-input bg-background px-4 text-sm focus:ring-2 focus:ring-primary outline-none min-w-0" />
-          <Button type="submit" disabled={loading || !credId.trim()} className="h-12 px-6 shrink-0 gap-2">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            <span className="hidden sm:inline">Verify</span>
+            placeholder={placeholder} // <-- Injected the moving state here
+            className="w-full h-12 rounded-xl border border-input bg-background px-4 text-sm text-center focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-muted-foreground/40 font-medium" 
+          />
+          
+          <Button 
+            type="submit" 
+            disabled={loading || !credId.trim()} 
+            className="w-full sm:w-auto min-w-[160px] h-12 px-6 rounded-xl gap-2 shadow-sm font-medium transition-transform active:scale-[0.98]"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            <span>Verify Credential</span>
           </Button>
         </form>
 
+        {/* Verification Report Display Card */}
         {searched && result && (
           <div className={cn(
-            'rounded-2xl border p-6 animate-in fade-in slide-in-from-bottom-2',
-            result.valid ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'
+            'rounded-2xl border p-6 shadow-sm transition-all animate-in fade-in slide-in-from-bottom-3 duration-3xl',
+            result.valid ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'
           )}>
             {result.valid ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="h-5 w-5 text-success" />
                   </div>
                   <div>
-                    <p className="font-bold text-success">Valid {result.type === 'certificate' ? 'Certificate' : 'Badge'}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{result.id}</p>
+                    <p className="font-bold text-success text-sm sm:text-base">
+                      Valid {result.type === 'certificate' ? 'Certificate' : 'Badge'} Verified
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5 tracking-wider">{result.id}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/50">
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/60">
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Holder</p>
-                    <p className="font-semibold mt-0.5">{result.holder}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Holder</p>
+                    <p className="font-semibold text-sm mt-0.5">{result.holder}</p>
                   </div>
-                  {result.type === 'certificate' && (<>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Course</p>
-                      <p className="font-semibold mt-0.5">{result.course}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Instructor</p>
-                      <p className="font-semibold mt-0.5">{result.instructor}</p>
-                    </div>
-                  </>)}
+                  {result.type === 'certificate' && (
+                    <>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Course</p>
+                        <p className="font-semibold text-sm mt-0.5">{result.course}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Instructor</p>
+                        <p className="font-semibold text-sm mt-0.5">{result.instructor}</p>
+                      </div>
+                    </>
+                  )}
                   {result.type === 'badge' && (
                     <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Achievement</p>
-                      <p className="font-semibold mt-0.5">{result.badge}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Achievement</p>
+                      <p className="font-semibold text-sm mt-0.5">{result.badge}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Issued</p>
-                    <p className="font-semibold mt-0.5">{fmt(result.issued_at)}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Issued On</p>
+                    <p className="font-semibold text-sm mt-0.5">{fmt(result.issued_at)}</p>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground pt-1">
-                  This {result.type} was issued by LearnAfrica Lite and is authentic.
+                
+                <p className="text-xs text-muted-foreground pt-2 border-t border-border/40 italic">
+                  This validation payload confirms the token was securely signed and registered by LearnAfrica Lite.
                 </p>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+              <div className="flex gap-4 items-start">
+                <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
                   <XCircle className="h-5 w-5 text-destructive" />
                 </div>
-                <div>
-                  <p className="font-bold text-destructive">Credential Not Found</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {result.message || 'This ID does not match any issued certificate or badge.'}
+                <div className="space-y-1">
+                  <p className="font-bold text-destructive text-sm sm:text-base">Signature Lookup Failed</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {result.message || 'This credential key is unknown or missing from the distribution register.'}
                   </p>
                 </div>
               </div>
@@ -242,10 +287,7 @@ function TestimonialsSection() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-semibold text-warning mb-4">
-            <Star className="h-4 w-4 fill-warning" /> Learner Stories
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold">What Our Learners Say</h2>
+          <h2 className="text-3xl font-bold sm:text-4xl mb-4">What Our Learners Say</h2>
           <p className="text-muted-foreground mt-3 text-base sm:text-lg">
             Join thousands of satisfied learners transforming their careers.
           </p>
@@ -261,7 +303,7 @@ function TestimonialsSection() {
             opacity: animating ? 0 : 1,
             transition: 'opacity 0.4s ease',
           }}>
-            <Card className="relative p-8 sm:p-12 overflow-hidden border-2 border-border/60 bg-card shadow-xl">
+            <Card className="relative p-8 sm:p-12 overflow-hidden border-2 border-border/60 bg-card shadow-md">
               {/* Decorative gradient blob */}
               <div className={cn(
                 'absolute -top-16 -right-16 h-48 w-48 rounded-full blur-3xl opacity-10 bg-gradient-to-br',
@@ -273,50 +315,46 @@ function TestimonialsSection() {
               )} />
 
               {/* Quote icon */}
-              <div className={cn(
-                'inline-flex h-12 w-12 items-center justify-center rounded-2xl mb-6 bg-gradient-to-br text-white',
-                t.color
-              )}>
-                <Quote className="h-6 w-6" />
-              </div>
+              
 
               {/* Stars */}
               <div className="flex gap-1 mb-5">
                 {[...Array(t.rating)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-warning text-warning" />
+                  <Star key={i} className="h-4 w-4 fill-warning text-warning" />
                 ))}
               </div>
 
               {/* Quote text */}
-              <blockquote className="text-lg sm:text-xl text-foreground font-medium leading-relaxed mb-8 relative z-10">
+              <blockquote className="text-muted-foreground mb-6 flex-grow text-sm md:text-lg leading-relaxed">
                 "{t.quote}"
               </blockquote>
 
               {/* Author */}
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  'h-12 w-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 bg-gradient-to-br',
+                  'h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 bg-gradient-to-br',
                   t.color
                 )}>
                   {t.initial}
                 </div>
                 <div>
-                  <p className="font-bold text-foreground">{t.name}</p>
-                  <p className="text-sm text-muted-foreground">{t.role} at <span className="text-primary font-medium">{t.company}</span></p>
+                  <p className="font-bold text-sm truncate md:text-lg">{t.name}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground truncate">{t.role} at <span className="text-primary font-medium">{t.company}</span></p>
                 </div>
               </div>
             </Card>
           </div>
 
           {/* Prev / Next arrows */}
-          <button onClick={prev}
+          {/* <button onClick={prev}
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-6 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-background border-2 border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all z-10">
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button onClick={next}
             className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-6 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-background border-2 border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all z-10">
             <ChevronRight className="h-5 w-5" />
-          </button>
+          </button> */}
+
         </div>
 
         {/* Dot indicators */}
@@ -695,14 +733,11 @@ function CommentsSection({ user, isAuthenticated }) {
   const totalCount = comments.reduce((a,c)=>a+1+(c.replies||[]).length,0);
 
   return (
-    <section id="comments-section" className="py-14 sm:py-20 bg-muted/10 border-t border-border">
+    <section id="comments-section" className="py-14 sm:py-20 bg-muted/10">
       <div className="container mx-auto px-4 max-w-2xl">
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary mb-3">
-            <MessageSquare className="h-4 w-4" /> Community Discussion
-          </div>
           <h2 className="text-2xl sm:text-3xl font-bold">Join the Conversation</h2>
           <p className="text-muted-foreground mt-2 text-sm">
             Share your thoughts and connect with fellow learners.
@@ -771,7 +806,7 @@ function CommentsSection({ user, isAuthenticated }) {
           </div>
         ) : (
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scroll-smooth"
-               style={{ scrollbarWidth: 'thin' }}>
+              style={{ scrollbarWidth: 'thin' }}>
             {comments.map(c=>(
               <CommentCard key={c.id} comment={c} user={user}
                 isAuthenticated={isAuthenticated}
@@ -799,6 +834,7 @@ export function LandingPage() {
   const { user, courses, isAuthenticated } = useAuth();
 
   const displayCourses = courses.filter(c => !c.isEnrolled).slice(0, 3);
+
   const stats = [
     { value: '50K+',                      label: 'Active Learners' },
     { value: `${courses.length}+`,        label: 'Expert Courses'  },
@@ -810,63 +846,122 @@ export function LandingPage() {
     <div className="flex flex-col">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background py-20 lg:py-32">
+
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background py-20 lg:py-32">
         <div className="container mx-auto px-4">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
+          <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-                <Zap className="h-4 w-4" /> New courses added weekly
+                <Zap className="h-4 w-4" />
+                New courses added weekly
               </div>
-              <h1 className="text-4xl font-extrabold sm:text-5xl lg:text-6xl">
+              
+              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-balance">
                 Unlock Your Potential with{' '}
                 <span className="text-primary">World-Class</span> Education
               </h1>
-              <p className="text-lg text-muted-foreground">
-                Join thousands of learners across Africa gaining new skills and transforming their careers.
+              
+              <p className="text-lg text-muted-foreground max-w-lg text-pretty">
+                Join thousands of learners across Africa gaining new skills, advancing their careers, and achieving their dreams with our expert-led online courses.
               </p>
-              <div className="flex flex-wrap gap-4">
-                {isAuthenticated
-                  ? <Link to="/courses"><Button size="lg">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
-                  : <>
-                      <Link to="/signup"><Button size="lg">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
-                      <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
-                    </>}
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/signup">
+                  <Button size="lg" className="w-full sm:w-auto">
+                    Get Started Free
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/courses">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                    <Play className="h-5 w-5" />
+                    Browse Courses
+                  </Button>
+                </Link>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex -space-x-3">
-                  {[
-                    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4',
-                    'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffd5dc',
-                    'https://api.dicebear.com/7.x/avataaars/svg?seed=Sasha&backgroundColor=c0aede',
-                    'https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=d1d4f9',
-                    'https://api.dicebear.com/7.x/avataaars/svg?seed=Kobe&backgroundColor=ffdfbf',
-                  ].map((src, i) => (
-                    <img key={i} src={src} alt="" loading="lazy"
-                      className="h-10 w-10 rounded-full bg-muted border-2 border-background object-cover" />
-                  ))}
+
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-6 pt-4 justify-center md:justify-start">                <div className="flex -space-x-3">
+                {[
+                  "/images/student1.jpg",
+                  "/images/student2.jpg",
+                  "/images/student3.jpg",
+                  "/images/student4.jpg",
+                  "/images/student5.jpg"
+                ].map((src, i) => (
+                  <div 
+                    key={i} 
+                    className="h-10 w-10 rounded-full border-2 border-background bg-muted overflow-hidden"
+                  >
+                    <img 
+                      src={src} 
+                      alt={`Student ${i + 1}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover" 
+                    />
+                  </div>
+                ))}
                 </div>
-                <div>
-                  <div className="flex">{[...Array(5)].map((_,i) => <Star key={i} className="h-4 w-4 fill-warning text-warning" />)}</div>
-                  <p className="text-sm">Trusted by 50K+ learners</p>
+                <div className = "flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <Star key={i} className="h-4 w-4 fill-warning text-warning" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Trusted by 50,000+ learners</p>
                 </div>
               </div>
             </div>
-            <div className="hidden lg:grid grid-cols-2 gap-6">
-              {[
-                { icon: TrendingUp, val: '85%', label: 'Career Growth' },
-                { icon: Users,      val: '50K+', label: 'Students'      },
-                { icon: Award,      val: '200+', label: 'Certificates'  },
-                { icon: BookOpen,   val: '500+', label: 'Lessons'       },
-              ].map(({ icon: Icon, val, label }) => (
-                <Card key={label} className="p-6">
-                  <Icon className="h-6 w-6 text-primary mb-2" />
-                  <p className="text-3xl font-bold">{val}</p>
-                  <p className="text-muted-foreground">{label}</p>
-                </Card>
-              ))}
+
+            <div className="relative hidden lg:block">
+              <div className="relative rounded-3xl bg-gradient-to-br from-primary/10 via-transparent to-accent/10 p-8 border border-border/50">
+                <div className="grid grid-cols-2 gap-6">
+                  <Card className="p-6 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-3xl text-foreground">85%</p>
+                      <p className="text-sm font-medium text-muted-foreground">Career Growth</p>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center">
+                      <Users className="h-6 w-6 text-accent" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-3xl text-foreground">50K+</p>
+                      <p className="text-sm font-medium text-muted-foreground">Active Students</p>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                      <Award className="h-6 w-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-3xl text-foreground">200+</p>
+                      <p className="text-sm font-medium text-muted-foreground">Certificates</p>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                      <BookOpen className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-3xl text-foreground">500+</p>
+                      <p className="text-sm font-medium text-muted-foreground">Lessons</p>
+                    </div>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
       </section>
 
       {/* ── Stats ── */}
@@ -875,30 +970,39 @@ export function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map(s => (
               <div key={s.label} className="text-center">
-                <p className="text-3xl font-bold text-primary">{s.value}</p>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
+                <p className="text-3xl md:text-4xl font-bold text-primary">{s.value}</p>
+                <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section className="py-20">
+      {/* Features Section */}
+      <section className="py-20 lg:py-32">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold">Why Choose LearnAfrica?</h2>
+            <h2 className="text-3xl font-bold sm:text-4xl mb-4">
+              Why Choose LearnAfrica?
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              We provide everything you need to succeed in your learning journey
+            </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map(f => (
-              <Card key={f.title} className="p-6 hover:shadow-md transition-shadow">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <f.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-                <p className="text-muted-foreground text-sm">{f.description}</p>
-              </Card>
-            ))}
+
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {features.map(feature => {
+              const Icon = feature.icon
+              return (
+                <Card key={feature.title} className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm">{feature.description}</p>
+                </Card>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -908,56 +1012,53 @@ export function LandingPage() {
       <section className="py-20 bg-muted/20">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary mb-4">
-              <Zap className="h-4 w-4" /> Simple Process
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold">How It Works</h2>
-            <p className="text-muted-foreground mt-3 text-base sm:text-lg">
-              Start learning in minutes — no complicated setup, just progress.
+            <h2 className="text-3xl font-bold sm:text-4xl mb-4">
+              How It Works
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Start your learning journey in four simple steps
             </p>
           </div>
 
           {/* Steps */}
           <div className="relative">
             {/* Connecting line — desktop only */}
-            <div className="hidden lg:block absolute top-16 left-1/2 -translate-x-1/2 w-[calc(100%-200px)] h-0.5 bg-gradient-to-r from-transparent via-border to-transparent" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:gap-8 gap-10 ">
               {[
                 {
                   step: '01',
                   icon: Users,
                   title: 'Create Your Account',
-                  description: 'Sign up for free in seconds. No credit card needed to explore hundreds of courses.',
+                  description: 'Sign up for free in seconds. No credit card required to explore hundreds of courses.',
                   color: 'text-primary bg-primary/10 border-primary/20',
                 },
                 {
                   step: '02',
                   icon: BookOpen,
                   title: 'Choose a Course',
-                  description: 'Browse courses by category, difficulty, or instructor. Filter by free or paid.',
-                  color: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+                  description: 'Filter courses by category, difficulty, or instructor and sort by free or paid.',
+                  color: 'text-accent bg-accent/10 border-accent/20',
                 },
                 {
                   step: '03',
                   icon: Play,
                   title: 'Learn at Your Pace',
-                  description: 'Watch video lessons, take notes, join discussions, and complete quizzes — on your schedule.',
-                  color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+                  description: 'Join lessons, take notes and discussions, and complete quizzes on your schedule.',
+                  color: 'text-emerald-600 bg-emerald-600/10 border-emerald-600/20',
                 },
                 {
                   step: '04',
                   icon: Award,
                   title: 'Earn Your Certificate',
-                  description: 'Pass the final exam and download a verifiable certificate to share with employers.',
-                  color: 'text-warning bg-warning/10 border-warning/20',
+                  description: 'Pass the final quiz and get certificate to share with employers.',
+                  color: 'text-orange-600 bg-orange-600/10 border-orange-600/20',
                 },
               ].map((item, i) => (
                 <div key={i} className="relative flex flex-col items-center text-center group">
                   {/* Step number */}
                   <div className="relative mb-6">
-                    <div className={`flex h-16 w-16 items-center justify-center rounded-2xl border-2 shadow-sm transition-transform duration-300 group-hover:scale-110 ${item.color}`}>
-                      <item.icon className="h-7 w-7" />
+                    <div className={`flex h-16 w-16 items-center justify-center rounded-md border-2 shadow-sm transition-transform duration-300 group-hover:scale-110 ${item.color}`}>
+                      <item.icon className="h-6 w-6" />
                     </div>
                     <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-black">
                       {item.step}
@@ -971,19 +1072,64 @@ export function LandingPage() {
           </div>
 
           {/* CTA below steps */}
-          <div className="text-center mt-12">
+          <div className="text-center md:mt-20 mt-14">
             <Link to="/signup">
               <Button size="lg" className="gap-2 px-8">
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
-            <p className="text-xs text-muted-foreground mt-3">Free forever · No credit card required</p>
           </div>
+
         </div>
       </section>
 
       {/* ── Popular Courses ── */}
-      {displayCourses.length > 0 && (
+
+
+      {displayCourses.length > 0 &&(
+        <section className="py-20 lg:py-32 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div>
+              <h2 className="text-3xl font-bold sm:text-4xl mb-2 text-foreground">
+                Popular Courses
+              </h2>
+              <p className="text-muted-foreground">
+                Explore our most enrolled courses
+              </p>
+            </div>
+            
+            <Link to="/courses" className="w-fit">
+              <Button variant="outline" className="gap-2">
+                View All Courses
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Suspense 
+              fallback={
+                <>
+                  {/* Providing unique keys to skeletons prevents the 'removeChild' DOM exception */}
+                  {[1, 2, 3].map((id) => (
+                    <CourseCardSkeleton key={`skeleton-${id}`} />
+                  ))}
+                </>
+              }
+            >
+              {displayCourses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </Suspense>
+          </div>
+        </div>
+      </section>
+      )}
+
+      
+
+      {/* {displayCourses.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-12">
@@ -1000,32 +1146,48 @@ export function LandingPage() {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* ── Testimonials Carousel ── */}
       <TestimonialsSection />
 
-      {/* ── CTA ── */}
-      {!isAuthenticated && (
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <Card className="relative overflow-hidden bg-primary p-12 text-center">
-              <h2 className="text-3xl font-bold text-primary-foreground mb-4">Ready to Start Learning?</h2>
-              <p className="text-primary-foreground/80 mb-8">Join our growing community of African learners today.</p>
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Link to="/signup"><Button size="lg" variant="secondary">Create Free Account</Button></Link>
-                <Link to="/courses"><Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">Explore Courses</Button></Link>
-              </div>
-            </Card>
-          </div>
-        </section>
-      )}
-
       {/* ── Verify ── */}
       <VerifySection />
 
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-4">
+          <Card className="relative overflow-hidden bg-primary p-8 md:p-12 lg:p-16">
+            <div className="relative z-10 max-w-2xl">
+              <h2 className="text-3xl font-bold sm:text-4xl text-primary-foreground mb-4">
+                Ready to Start Learning?
+              </h2>
+              <p className="text-primary-foreground/80 text-lg mb-8">
+                Join our community of learners today and take the first step towards achieving your goals.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/signup">
+                  <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold">
+                    Create Free Account
+                  </Button>
+                </Link>
+                <Link to="/courses">
+                  <Button size="lg" variant="outline" className="w-full font-semibold sm:w-auto border-primary-foreground/30 text-primary hover:bg-primary-foreground/10">
+                    Explore Courses
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-primary-foreground/10" />
+            <div className="absolute -bottom-20 right-40 h-40 w-40 rounded-full bg-accent/20" />
+          </Card>
+        </div>
+      </section>
+
       {/* ── Community Discussion ── */}
+      {isAuthenticated && ( 
       <CommentsSection user={user} isAuthenticated={isAuthenticated} />
+      )}
 
     </div>
   );

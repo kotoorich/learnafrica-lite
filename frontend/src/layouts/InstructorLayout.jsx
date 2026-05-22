@@ -13,7 +13,7 @@ export default function InstructorLayout() {
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <main className="flex-1 min-w-0 lg:ml-64">
           {/* Mobile sidebar toggle */}
-          <div className="sticky top-16 z-30 flex items-center gap-4 border-b border-border bg-background px-4 py-3 lg:hidden">
+          <div className="sticky top-16 z-20 flex items-center gap-4 border-b border-border bg-background px-4 py-3 lg:hidden">
             <button
               onClick={() => setIsSidebarOpen(true)}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-input bg-background shrink-0"

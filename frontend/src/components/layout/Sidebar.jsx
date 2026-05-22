@@ -14,7 +14,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   return (
     <>
-      {isOpen && <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden" onClick={onClose} />}
+      {isOpen && <div className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside className={cn(
         'fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 border-r border-border bg-card transition-transform duration-300 lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'

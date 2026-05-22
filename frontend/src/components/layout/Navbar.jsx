@@ -103,18 +103,18 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             to={isAdmin ? '/admin' : isInstructor ? '/instructor' : isStudent ? '/dashboard' : '/'}
-            className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 transition-opacity hover:opacity-80"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-primary/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-sm shadow-primary/20">
               <BookOpen className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold tracking-tight hidden sm:block">
+            <span className="text-xl font-bold tracking-tight text-foreground">
               Learn<span className="text-primary">Africa</span>
             </span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-6 flex-1 justify-center">
+          <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
             {navLinks.map(link => (
               <Link key={link.href} to={link.href}
                 className={cn('text-sm font-semibold transition-colors hover:text-primary',
@@ -123,18 +123,17 @@ export default function Navbar() {
               </Link>
             ))}
             {/* Scroll buttons — only on landing-accessible pages */}
-            {scrollButtons.map(btn => (
+            {/* {scrollButtons.map(btn => (
               <button key={btn.id}
                 onClick={() => scrollTo(btn.id)}
                 className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5">
-                <btn.icon className="h-3.5 w-3.5" />
                 {btn.label}
               </button>
-            ))}
+            ))} */}
           </nav>
 
           {/* Desktop right */}
-          <div className="hidden lg:flex items-center gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             <ThemeToggle />
             <div className="h-5 w-px bg-border/60" />
             {isAuthenticated ? (
@@ -154,83 +153,88 @@ export default function Navbar() {
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
-            className="lg:hidden relative z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-input bg-background hover:bg-muted transition-colors shrink-0"
+            className="md:hidden relative z-[110] flex h-11 w-11 items-center justify-center rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground active:scale-90 transition-transform"
           >
             {isMobileMenuOpen
-              ? <X className="h-5 w-5" strokeWidth={2.5} />
-              : <Menu className="h-5 w-5" strokeWidth={2.5} />}
+              ? <X className="h-6 w-6 animate-in zoom-in-50 duration-200" strokeWidth={2.5} />
+              : <Menu className="h-6 w-6" strokeWidth={2} />}
           </button>
         </div>
       </header>
 
       {/* ── Mobile Menu Overlay ── */}
+
       {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-background lg:hidden flex flex-col"
+        <div className="fixed inset-0 z-30 md:hidden bg-background animate-in fade-in duration-200"
           style={{ top: 0, paddingTop: '4rem' }}
         >
-          <div className="flex-1 overflow-y-auto">
-            <div className="px-4 pt-6 pb-10 space-y-8 max-w-sm mx-auto">
+          <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
 
-              {/* Main nav links */}
-              <nav className="space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 px-3 mb-3">Navigation</p>
-                {navLinks.map(link => {
-                  const active = isActive(link.href);
-                  return (
-                    <Link key={link.href} to={link.href} onClick={closeMenu}
-                      className={cn(
-                        'flex items-center gap-4 rounded-xl px-4 py-3.5 transition-all',
-                        active
-                          ? 'bg-primary/10 text-primary border border-primary/20'
-                          : 'text-foreground/80 hover:bg-muted border border-transparent'
-                      )}>
-                      <link.icon className={cn('h-5 w-5 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
-                      <span className="text-sm font-semibold">{link.label}</span>
-                      <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground/40" />
-                    </Link>
-                  );
-                })}
-              </nav>
+            <div className="flex-1 overflow-y-auto bg-background">
+              <div className="mx-auto max-w-md px-5 py-8 space-y-8">
+                
+                <nav className="space-y-3">
+                  {navLinks.map((link) => {
+                    const isActive = location.pathname === link.href;
+                    const Icon = link.label.toLowerCase().includes('dashboard') ? LayoutDashboard : BookOpen;
 
-              {/* Scroll buttons */}
-              {scrollButtons.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 px-3">Quick Links</p>
-                  {scrollButtons.map(btn => (
-                    <button key={btn.id}
-                      onClick={() => { scrollTo(btn.id); closeMenu(); }}
-                      className="w-full flex items-center gap-4 rounded-xl px-4 py-3.5 text-foreground/80 hover:bg-muted border border-transparent transition-all">
-                      <btn.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                      <span className="text-sm font-semibold">{btn.label}</span>
-                      <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground/40" />
-                    </button>
-                  ))}
-                </div>
-              )}
+                    return (
+                      <Link
+                        key={link.href}
+                        to={link.href}
+                        onClick={closeMenu}
+                        className={cn(
+                          "group flex h-14 items-center justify-between rounded-xl px-4 transition-all",
+                          isActive ? "bg-primary/10 text-primary border border-primary/30" : "bg-card border border-border text-foreground/90"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex w-8 shrink-0 justify-start">
+                            <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2.5} />
+                          </div>
+                          <span className="text-sm font-medium group-hover:text-primary transition-colors">{link.label}</span>
+                        </div>
+                        <ChevronRight className={cn("h-4 w-4 transition-transform group-hover:translate-x-1", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={3} />
+                      </Link>
+                    )
+                  })}
+                </nav>
 
-              {/* Auth / Profile section */}
-              <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex justify-between items-center">
-                  <ThemeToggle />
-                </div>
-                {isAuthenticated ? (
-                  <ProfileDropdown user={user} closeMainMenu={closeMenu} />
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link to="/login" onClick={closeMenu}>
-                      <Button variant="outline" className="w-full h-12 rounded-xl">Log In</Button>
-                    </Link>
-                    <Link to="/signup" onClick={closeMenu}>
-                      <Button className="w-full h-12 rounded-xl">Sign Up</Button>
-                    </Link>
+                {/* {scrollButtons.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 px-3">Quick Links</p>
+                    {scrollButtons.map(btn => (
+                      <button key={btn.id}
+                        onClick={() => { scrollTo(btn.id); closeMenu(); }}
+                        className="w-full flex items-center gap-4 rounded-xl px-4 py-3.5 text-foreground/80 hover:bg-muted border border-transparent transition-all">
+                        <btn.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                        <span className="text-sm font-semibold">{btn.label}</span>
+                        <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground/40" />
+                      </button>
+                    ))}
                   </div>
-                )}
+                )} */}
+
+                <div className="space-y-3 border-t border-border pt-8">
+                  <ThemeToggle />
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      <NotificationsDropdown closeMainMenu={closeMenu} />
+                      <ProfileDropdown user={user} hideChevron={false} closeMainMenu={closeMenu} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <Link to="/login" onClick={closeMenu}><Button variant="outline" className="h-12 w-full rounded-xl">Log In</Button></Link>
+                      <Link to="/signup" onClick={closeMenu}><Button className="h-12 w-full rounded-xl">Sign Up</Button></Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
     </>
   );
 }

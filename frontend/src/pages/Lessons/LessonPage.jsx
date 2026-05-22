@@ -103,6 +103,7 @@ function SidebarContent({ sections, allLessons, lessonId, courseId, onClose }) {
     });
     if (s.size === 0 && sections.length > 0) s.add(sections[0].id);
     return s;
+    
   });
 
   useEffect(() => {
@@ -207,6 +208,7 @@ export function LessonPage() {
     if (!lessonId || lessonId === 'undefined') {
       setError('Invalid lesson'); setLoading(false); return;
     }
+    console.log()
     let cancelled = false;
     setLoading(true); setError(null); setActiveTab('content');
     authedFetch(`/api/courses/${courseId}/lessons/${lessonId}`)
@@ -333,59 +335,64 @@ export function LessonPage() {
   const navBtnClass = "h-11 px-3 sm:px-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 flex items-center justify-center gap-2 shrink-0";
 
   return (
-    <div className="flex flex-col bg-background font-sans antialiased text-foreground">
+    <div className=" min-h-screen flex flex-col bg-background font-sans antialiased text-foreground">
 
       {/* ── HEADER (teammate's exact sticky header) ── */}
-      <header className="border-b border-border bg-card/30">
-        <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur mt-8">
+        {/* CHANGED: Added max-w-7xl, mx-auto, and updated responsive paddings to match your body element exactly */}
+        <div className="flex h-14 items-center justify-between max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
           <div className="flex items-center gap-4">
-            <Link to={`/courses/${courseId}`}
-              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Link 
+              to={`/courses/${courseId}`}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
               <ChevronLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back to Course</span>
             </Link>
             <div className="hidden md:block h-4 w-px bg-border" />
             <div className="hidden md:block">
-              <p className="text-sm font-semibold truncate max-w-xs">{lesson.courseTitle || ''}</p>
+              <p className="text-sm font-semibold truncate max-w-xs">{lesson.title || ''}</p>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
-            {allLessons.length > 0 && (
-              <span className="text-xs font-bold tabular-nums text-muted-foreground bg-muted px-2 py-1 rounded">
-                {currentIndex + 1} / {allLessons.length}
-              </span>
-            )}
-            <Button variant="outline" size="sm"
-              onClick={() => setShowSidebar(true)}
-              className="lg:hidden h-9 w-9 p-0">
+            <span className="text-xs font-bold tabular-nums text-muted-foreground bg-muted px-2 py-1 rounded">
+              {currentIndex + 1} / {allLessons.length}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setShowSidebar(true)} className="lg:hidden h-9 w-9 p-0">
               <Menu className="h-4 w-4" />
             </Button>
           </div>
+          
         </div>
       </header>
 
       {/* ── BODY ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative flex gap-0">
 
         {/* ── MAIN (scrollable) ── */}
-        <main className="flex-1 overflow-y-auto outline-none px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 w-full min-w-0 outline-none bg-background">
 
           {/* VIDEO */}
           {embedUrl && (
-            <div className="aspect-video w-full bg-slate-950 relative shadow-inner rounded-2xl overflow-hidden">
-              {isIframe ? (
-                <iframe src={embedUrl} className="w-full h-full" allowFullScreen
-                  title={lesson.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" />
-              ) : (
-                <video controls className="w-full h-full object-cover" preload="metadata">
-                  <source src={embedUrl} type="video/mp4" />
-                </video>
-              )}
+            <div className="w-full bg-slate-950 shadow-inner overflow-hidden border-b border-border">
+              <div className="w-full aspect-video">
+                {isIframe ? (
+                  <iframe src={embedUrl} className="w-full h-full" allowFullScreen
+                    title={lesson.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" />
+                ) : (
+                  <video controls className="w-full h-full object-cover" preload="metadata">
+                    <source src={embedUrl} type="video/mp4" />
+                  </video>
+                )}
+              </div>
             </div>
           )}
 
-          <div className="max-w-4xl mx-auto py-8">
+          <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
 
             {/* Lesson meta */}
             <div className="mb-10">
@@ -396,11 +403,7 @@ export function LessonPage() {
                     <span>{lesson.duration}</span>
                   </div>
                 )}
-                {lesson.is_final && (
-                  <span className="flex items-center gap-1.5 text-warning">
-                    <Flag className="h-3.5 w-3.5" /> Final Exam
-                  </span>
-                )}
+                
                 {currentLessonFinished && (
                   <span className="flex items-center gap-1.5 text-success">
                     <CheckCircle className="h-3.5 w-3.5" /> Completed
@@ -512,20 +515,32 @@ export function LessonPage() {
                     )}
                   </div>
                   <div className="flex justify-center">
-                    <Button onClick={handleSaveNotes}
+                    <Button 
+                      onClick={handleSaveNotes}
+                      // Disabled if saving or if notes are empty
                       disabled={saveStatus === 'saving' || !userNotes.trim()}
-                      variant={saveStatus === 'success' ? 'outline' : 'default'}
+                      variant={saveStatus === 'success' ? "outline" : "primary"}
                       className={cn(
-                        'font-bold uppercase tracking-wider text-[10px] sm:text-xs h-10 px-8 flex items-center gap-2 transition-all duration-300',
-                        saveStatus === 'success' && 'border-success text-success hover:bg-success/5',
-                        !userNotes.trim() && 'opacity-50 cursor-not-allowed grayscale'
-                      )}>
+                        "font-bold uppercase tracking-wider text-[10px] sm:text-xs h-10 px-8 flex items-center gap-2 transition-all duration-300",
+                        saveStatus === 'success' && "border-success text-success hover:bg-success/5",
+                        !userNotes.trim() && "opacity-50 cursor-not-allowed grayscale"
+                      )}
+                    >
                       {saveStatus === 'saving' ? (
-                        <><div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" /><span>Syncing...</span></>
+                        <>
+                          <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          <span>Syncing...</span>
+                        </>
                       ) : saveStatus === 'success' ? (
-                        <><CheckCircle className="h-3.5 w-3.5" /><span>Changes Saved</span></>
+                        <>
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          <span>Changes Saved</span>
+                        </>
                       ) : (
-                        <><Save className="h-3.5 w-3.5" /><span>Save Session Notes</span></>
+                        <>
+                          <Save className="h-3.5 w-3.5" />
+                          <span>Save Note</span>
+                        </>
                       )}
                     </Button>
                   </div>
@@ -539,7 +554,7 @@ export function LessonPage() {
             </div>
 
             {/* ── NAV FOOTER (teammate's exact 3-column layout) ── */}
-            <div className="mt-16 pt-8 border-t border-border">
+            <div className="mt-16 border-t border-border pt-8">
               <div className="flex items-center justify-between gap-4">
 
                 {/* Previous */}
@@ -589,10 +604,7 @@ export function LessonPage() {
         </main>
 
         {/* ── SIDEBAR (teammate's exact right sidebar) ── */}
-        <aside className={cn(
-          'fixed inset-y-0 right-0 z-40 lg:z-30 w-full sm:w-80 border-l border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0',
-          showSidebar ? 'translate-x-0' : 'translate-x-full'
-        )}>
+          <aside className={cn('fixed inset-y-0 right-0 z-40 lg:z-30 w-full sm:w-80 border-l border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0', showSidebar ? 'translate-x-0' : 'translate-x-full')}>
           <div className="flex flex-col h-full shadow-2xl lg:shadow-none">
             <div className="flex items-center justify-between p-5 border-b lg:hidden">
               <h3 className="font-bold tracking-tight">Course Content</h3>

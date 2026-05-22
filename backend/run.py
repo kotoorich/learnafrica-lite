@@ -36,4 +36,4 @@ if __name__ == '__main__':
 ============================================================
 """)
     socketio.run(flask_app, host='0.0.0.0', port=port,
-                 debug=True, allow_unsafe_werkzeug=True)
+                 debug=False, allow_unsafe_werkzeug=True)

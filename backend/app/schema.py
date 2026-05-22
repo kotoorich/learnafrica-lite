@@ -160,53 +160,52 @@ def full_user(db, uid: str, use_postgres: bool) -> dict:
     Includes stats, badges, and settings.
     """
     ph = '%s' if use_postgres else '?'
-    u = db.execute(
-        'SELECT * FROM users WHERE id=' + ph, (uid,)
-    ).fetchone()
-    if not u:
+    
+    # Fetch and convert user row
+    user_row = db.execute('SELECT * FROM users WHERE id=' + ph, (uid,)).fetchone()
+    if not user_row:
         return {}
+    u = dict(user_row)
 
-    stats = db.execute(
-        'SELECT * FROM user_stats WHERE user_id=' + ph, (uid,)
-    ).fetchone()
+    # Fetch and convert stats row
+    stats_row = db.execute('SELECT * FROM user_stats WHERE user_id=' + ph, (uid,)).fetchone()
+    s = dict(stats_row) if stats_row else {}
 
-    badges = db.execute(
-        'SELECT badge_key, earned_at FROM user_badges WHERE user_id=' + ph, (uid,)
-    ).fetchall()
+    # Fetch and convert badges rows
+    badges_rows = db.execute('SELECT badge_key, earned_at FROM user_badges WHERE user_id=' + ph, (uid,)).fetchall()
+    badges = [dict(row) for row in badges_rows]
 
-    # Fetch enrollments so frontend knows which courses student is enrolled in
-    enrollments = db.execute(
-        'SELECT course_id, progress, enrolled_at FROM user_enrollments WHERE user_id=' + ph,
-        (uid,)
-    ).fetchall()
+    # Fetch and convert enrollment rows
+    enroll_rows = db.execute('SELECT course_id, progress, enrolled_at FROM user_enrollments WHERE user_id=' + ph, (uid,)).fetchall()
+    enrollments = [dict(row) for row in enroll_rows]
 
     result = {
-        'id':               u['id'],
-        'name':             u['name'],
-        'email':            u['email'],
-        'role':             u['role'],
-        'avatar':           u.get('avatar') or '',
-        'bio':              u.get('bio') or '',
-        'location':         u.get('location') or '',
-        'website':          u.get('website') or '',
-        'instructor_title': u.get('instructor_title') or '',
-        'instructor_status':u.get('instructor_status') or 'none',
+        'id':                u['id'],
+        'name':              u['name'],
+        'email':             u['email'],
+        'role':              u['role'],
+        'avatar':            u.get('avatar') or '',
+        'bio':               u.get('bio') or '',
+        'location':          u.get('location') or '',
+        'website':           u.get('website') or '',
+        'instructor_title':  u.get('instructor_title') or '',
+        'instructor_status': u.get('instructor_status') or 'none',
         'enrollments': [
             {'course_id': e['course_id'],
-             'progress':  e['progress'] or 0,
+             'progress':  e.get('progress') or 0,
              'isEnrolled': True}
             for e in enrollments
         ],
         'stats': {
-            'lessons_completed':  (stats['lessons_completed']  if stats else 0),
-            'courses_completed':  (stats['courses_completed']  if stats else 0),
-            'perfect_quizzes':    (stats['perfect_quizzes']    if stats else 0),
-            'streak':             (stats['streak']             if stats else 0),
-            'total_earnings':     float(stats['total_earnings'] if stats and stats.get('total_earnings') else 0),
-            'average_rating':     float(stats['average_rating'] if stats and stats.get('average_rating') else 0),
+            'lessons_completed': s.get('lessons_completed', 0),
+            'courses_completed': s.get('courses_completed', 0),
+            'perfect_quizzes':   s.get('perfect_quizzes', 0),
+            'streak':            s.get('streak', 0),
+            'total_earnings':    float(s.get('total_earnings') or 0),
+            'average_rating':    float(s.get('average_rating') or 0),
         },
         'badges': [
-            {'key': b['badge_key'], 'earned_at': str(b['earned_at'])}
+            {'key': b['badge_key'], 'earned_at': str(b.get('earned_at', ''))}
             for b in badges
         ],
     }

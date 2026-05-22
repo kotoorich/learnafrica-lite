@@ -42,7 +42,8 @@ from .models    import (get_course_sections, score_quiz, get_or_issue_certificat
                          get_instructor_stats, get_user_enrolled_courses)
 
 # ── Globals (set inside create_app) ──────────────────────────────────────────
-socketio = None
+from flask_socketio import SocketIO
+socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app() -> Flask:
     """
@@ -65,6 +66,8 @@ def create_app() -> Flask:
     app.config['PASS_MIN_LENGTH']      = int(os.environ.get('PASS_MIN_LENGTH', 6))
     app.config['QUIZ_PASS_SCORE']      = int(os.environ.get('QUIZ_PASS_SCORE', 70))
     app.config['MAX_CONTENT_LENGTH']   = 600 * 1024 * 1024  # 600MB
+
+    socketio.init_app(app, async_mode='threading')
 
     # Local file upload folder (dev only — production uses Supabase)
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'uploads')

@@ -280,7 +280,7 @@ export function CourseDetailPage() {
             {/* Course info */}
             <div className="lg:col-span-2 space-y-6">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{course.category}</Badge>
+                <Badge variant="success">{course.category}</Badge>
                 <Badge variant={
                   course.difficulty === 'Beginner' ? 'success' :
                   course.difficulty === 'Intermediate' ? 'warning' : 'destructive'

@@ -295,7 +295,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Mobile quick-nav strip */}
-      <div className="sm:hidden fixed top-[64px] left-0 right-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-2.5 flex justify-center gap-2 shadow-sm">
+      <div className="sm:hidden fixed top-[64px] left-0 right-0 z-20 bg-background/95 backdrop-blur border-b border-border px-4 py-2.5 flex justify-center gap-2 shadow-sm">
         <button onClick={() => scrollToSection('continue-learning')}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition-colors">
           <Book className="w-3.5 h-3.5" /> Progress

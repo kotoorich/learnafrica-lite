@@ -49,7 +49,7 @@ export default function MobileProfileDrawer({ isOpen, onClose, user, isLoading,
             icon={<LayoutDashboard className="h-4 w-4" />}
             label={isInstructor ? 'Instructor Dashboard' : 'My Dashboard'} onClick={onClose} />
           {isInstructor && <MenuLink to="/instructor/courses" icon={<BookMarked className="h-4 w-4" />} label="My Courses" onClick={onClose} />}
-          {isAdmin && <MenuLink to="/admin" icon={<Shield className="h-4 w-4" />} label="Admin Panel" onClick={onClose} variant="primary" />}
+          {isAdmin && <MenuLink to="/admin" icon={<Shield className="h-4 w-4" />} label="Admin Panel" onClick={onClose} />}
           <MenuLink to="/settings" icon={<Settings className="h-4 w-4" />} label="Settings" onClick={onClose} />
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function MobileProfileDrawer({ isOpen, onClose, user, isLoading,
 function MenuLink({ to, icon, label, onClick, variant = 'default' }) {
   return (
     <Link to={to} onClick={onClick}
-      className={cn('flex items-center gap-4 rounded-xl px-4 py-3 text-[13px] font-semibold transition-all group border-l-2',
+      className={cn('flex items-center gap-4 rounded-xl px-4 py-3 text-[13px] font-semibold transition-all group ',
         variant === 'primary' ? 'bg-primary/5 text-primary border-primary' :
         'text-foreground/80 border-transparent hover:bg-muted hover:border-primary/50 hover:text-primary')}>
       <span className={cn('transition-colors', variant === 'primary' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary')}>{icon}</span>

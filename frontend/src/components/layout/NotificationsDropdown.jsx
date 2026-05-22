@@ -52,9 +52,15 @@ export default function NotificationsDropdown({ hideChevron = false, closeMainMe
   return (
     <div className="relative" ref={dropdownRef}>
       <div onClick={() => setIsOpen(!isOpen)} className="group flex md:h-9 h-14 cursor-pointer items-center md:justify-center bg-card md:bg-transparent rounded-lg border md:border-none border-input px-3 md:px-1 hover:bg-muted">
-        <div className="relative flex md:w-full shrink-0 justify-start md:justify-center">
-          <Bell className="w-[18px] h-[18px]" />
-          {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>}
+        <div className="ml-4 md:ml-0 relative flex md:w-full shrink-0 justify-start md:justify-center">
+          <Bell className="w-[18px] h-[18px] text-foreground" />
+
+          {/* Badge */}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 md:-right-0 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
         </div>
         <span className="ml-4 md:hidden text-sm font-semibold">Notifications</span>
         {!hideChevron && <ChevronDown className={cn("ml-auto md:ml-0 h-4 w-4 transition-transform", isOpen && "rotate-180")} />}

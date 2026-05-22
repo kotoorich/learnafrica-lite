@@ -57,6 +57,8 @@ export default function CourseCard({ course, enrolled = false, searchQuery = '' 
             </span>
           </div>
 
+          
+
           <Link to={`/courses/${course.id}`} className="block">
             <h3 className="font-bold text-base leading-tight transition-colors duration-300 line-clamp-2 min-h-[2.5rem] group-hover:text-primary">
               {title}
