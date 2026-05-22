@@ -6,18 +6,34 @@ const AuthContext = createContext();
 // In development: empty string (Vite proxy forwards /api → localhost:5000)
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-async function api(endpoint, options = {}) {
+async function api(endpoint, options = {}, attempt = 0) {
   const token = sessionStorage.getItem('auth_token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
-  // Parse response safely - handle HTML error pages
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  } catch (networkErr) {
+    // Network failed entirely (likely Render cold start). Retry once after 2s.
+    if (attempt < 2) {
+      await new Promise(r => setTimeout(r, 2000));
+      return api(endpoint, options, attempt + 1);
+    }
+    throw new Error('Network error. Please check your connection.');
+  }
+
+  // Render returns 502/503 during cold start. Retry once.
+  if ((res.status === 502 || res.status === 503) && attempt < 2) {
+    await new Promise(r => setTimeout(r, 2000));
+    return api(endpoint, options, attempt + 1);
+  }
+
   const text = await res.text();
   let data;
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
-    // Response was not JSON (likely an HTML error page)
     if (!res.ok) {
       throw new Error(`Server error (HTTP ${res.status}). Please try again.`);
     }
