@@ -1004,6 +1004,11 @@ export function LandingPage() {
       {/* ── Testimonials Carousel ── */}
       <TestimonialsSection />
 
+      
+      {/* ── Verify ── */}
+      <VerifySection />
+
+      
       {/* ── CTA ── */}
       {!isAuthenticated && (
         <section className="py-20">
@@ -1020,8 +1025,7 @@ export function LandingPage() {
         </section>
       )}
 
-      {/* ── Verify ── */}
-      <VerifySection />
+
 
       {/* ── Community Discussion (only for logged-in users) ── */}
       {isAuthenticated && <CommentsSection user={user} isAuthenticated={isAuthenticated} />}
