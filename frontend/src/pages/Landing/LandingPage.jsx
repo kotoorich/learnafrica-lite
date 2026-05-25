@@ -977,7 +977,6 @@ export function LandingPage() {
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
-            <p className="text-xs text-muted-foreground mt-3">Free forever · No credit card required</p>
           </div>
         </div>
       </section>
@@ -1005,6 +1004,11 @@ export function LandingPage() {
       {/* ── Testimonials Carousel ── */}
       <TestimonialsSection />
 
+      
+      {/* ── Verify ── */}
+      <VerifySection />
+
+      
       {/* ── CTA ── */}
       {!isAuthenticated && (
         <section className="py-20">
@@ -1021,8 +1025,7 @@ export function LandingPage() {
         </section>
       )}
 
-      {/* ── Verify ── */}
-      <VerifySection />
+
 
       {/* ── Community Discussion (only for logged-in users) ── */}
       {isAuthenticated && <CommentsSection user={user} isAuthenticated={isAuthenticated} />}
