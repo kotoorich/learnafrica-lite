@@ -1005,6 +1005,11 @@ export function LandingPage() {
       {/* ── Testimonials Carousel ── */}
       <TestimonialsSection />
 
+      
+      {/* ── Verify ── */}
+      <VerifySection />
+
+      
       {/* ── CTA ── */}
       {!isAuthenticated && (
         <section className="py-20">
