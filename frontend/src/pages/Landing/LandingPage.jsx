@@ -1023,9 +1023,6 @@ export function LandingPage() {
         </section>
       )}
 
-      {/* ── Verify ── */}
-      <VerifySection />
-
       {/* ── Community Discussion (only for logged-in users) ── */}
       {isAuthenticated && <CommentsSection user={user} isAuthenticated={isAuthenticated} />}
 
