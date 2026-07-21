@@ -1012,6 +1012,9 @@ function AnimatedHowItWorksSection({ isAuthenticated }) {
 export function LandingPage() {
   const { user, courses, isAuthenticated } = useAuth();
 
+  // ── Define who should NOT see the Popular Courses and Explore Courses ──
+  const isAdminOrInstructor = isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'instructor');
+
   const displayCourses = courses.filter(c => !c.isEnrolled).slice(0, 3);
   const stats = [
     { value: '50K+',                      label: 'Active Learners' },
@@ -1048,13 +1051,19 @@ export function LandingPage() {
                 Join thousands of learners across Africa gaining new skills and transforming their careers.
               </p>
               <div className="flex flex-wrap gap-4 anim-fade-up anim-delay-300">
-                {isAuthenticated
-                  ? <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
-                  : <>
-                      <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
-                      <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
-                      <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
-                    </>}
+                {!isAuthenticated ? (
+                  <>
+                    <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
+                    <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
+                    <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
+                  </>
+                ) : isAdminOrInstructor ? (
+                  <Link to={user?.role === 'instructor' ? '/instructor' : '/admin'}>
+                    <Button size="lg" className="anim-pulse-soft">Go to Dashboard <ArrowRight className="h-5 w-5" /></Button>
+                  </Link>
+                ) : (
+                  <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
+                )}
               </div>
               <div className="flex items-center gap-6 anim-fade-up anim-delay-400">
                 <div className="flex -space-x-3">
@@ -1112,7 +1121,7 @@ export function LandingPage() {
       <AnimatedHowItWorksSection isAuthenticated={isAuthenticated} />
 
       {/* ── Popular Courses ── */}
-      {displayCourses.length > 0 && (
+      {!isAdminOrInstructor && displayCourses.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-12">
