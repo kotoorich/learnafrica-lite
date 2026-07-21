@@ -44,6 +44,132 @@ const CourseCard = ({ course }) => (
   </Card>
 );
 
+// ── Verify Credential ─────────────────────────────────────────────────────
+function VerifySection() {
+  const [credId,   setCredId]   = useState('');
+  const [result,   setResult]   = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [sectionRef, sectionVisible] = useOnScreen({ threshold: 0.2 });
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    // Aggressive client-side normalization: strip ALL whitespace anywhere in the ID
+    // (users often paste with tabs, newlines, or extra spaces). Uppercase for
+    // case-insensitive match. Backend does the same and also tolerates hyphens
+    // being dropped/added.
+    const normalized = credId.replace(/\s+/g, '').toUpperCase();
+    if (!normalized) return;
+    setLoading(true); setResult(null); setSearched(false);
+    try {
+      const res  = await fetch(`${API_BASE}/api/verify?id=${encodeURIComponent(normalized)}`);
+      const data = await res.json();
+      setResult(data);
+    } catch {
+      setResult({ valid: false, message: 'Verification service unavailable.' });
+    }
+    setLoading(false); setSearched(true);
+  };
+
+  const fmt = (s) => {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }); }
+    catch { return s; }
+  };
+
+  return (
+    <section id="verify-section" ref={sectionRef} className="py-16 sm:py-20 bg-gradient-to-b from-background to-muted/20 border-t border-border">
+      <div className={cn(
+        "container mx-auto px-4 max-w-2xl transition-all duration-700",
+        sectionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      )}>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
+            <ShieldCheck className="h-7 w-7 text-primary" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold">Verify a Credential</h2>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+            Enter a certificate or badge ID to verify its authenticity.
+          </p>
+        </div>
+
+        <form onSubmit={handleVerify} className="flex gap-2 mb-6">
+          <input type="text" value={credId}
+            onChange={e => { setCredId(e.target.value); setSearched(false); setResult(null); }}
+            placeholder="e.g. LA-CERT-ABCD-1A2B3C"
+            className="flex-1 h-12 rounded-xl border border-input bg-background px-4 text-sm focus:ring-2 focus:ring-primary outline-none min-w-0" />
+          <Button type="submit" disabled={loading || !credId.trim()} className="h-12 px-6 shrink-0 gap-2">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            <span className="hidden sm:inline">Verify</span>
+          </Button>
+        </form>
+
+        {searched && result && (
+          <div className={cn(
+            'rounded-2xl border p-6 animate-in fade-in slide-in-from-bottom-2',
+            result.valid ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'
+          )}>
+            {result.valid ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-success">Valid {result.type === 'certificate' ? 'Certificate' : 'Badge'}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{result.id}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/50">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Holder</p>
+                    <p className="font-semibold mt-0.5">{result.holder}</p>
+                  </div>
+                  {result.type === 'certificate' && (<>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Course</p>
+                      <p className="font-semibold mt-0.5">{result.course}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Instructor</p>
+                      <p className="font-semibold mt-0.5">{result.instructor}</p>
+                    </div>
+                  </>)}
+                  {result.type === 'badge' && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Achievement</p>
+                      <p className="font-semibold mt-0.5">{result.badge}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Issued</p>
+                    <p className="font-semibold mt-0.5">{fmt(result.issued_at)}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground pt-1">
+                  This {result.type} was issued by LearnAfrica Lite and is authentic.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                  <XCircle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="font-bold text-destructive">Credential Not Found</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {result.message || 'This ID does not match any issued certificate or badge.'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── Testimonials Carousel ─────────────────────────────────────────────────
 const TESTIMONIALS = [
   {
@@ -223,7 +349,7 @@ function TestimonialsSection() {
   );
 }
 
-// ── Community Discussion ──────────────────────────────────────────────────
+// ── Community Discussion — TikTok-style ──────────────────────────────────
 const COLORS = ['bg-primary','bg-accent','bg-purple-500','bg-emerald-500','bg-rose-500','bg-amber-500','bg-sky-500','bg-indigo-500'];
 function avatarColor(name) {
   let h = 0; for (let i=0;i<(name||'U').length;i++) h+=name.charCodeAt(i);
@@ -886,10 +1012,6 @@ function AnimatedHowItWorksSection({ isAuthenticated }) {
 export function LandingPage() {
   const { user, courses, isAuthenticated } = useAuth();
 
-  // ── CHANGE 1: Define who should NOT see the Popular Courses section ──
-  const isAdminOrInstructor = isAuthenticated && 
-    (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'instructor');
-
   const displayCourses = courses.filter(c => !c.isEnrolled).slice(0, 3);
   const stats = [
     { value: '50K+',                      label: 'Active Learners' },
@@ -926,22 +1048,13 @@ export function LandingPage() {
                 Join thousands of learners across Africa gaining new skills and transforming their careers.
               </p>
               <div className="flex flex-wrap gap-4 anim-fade-up anim-delay-300">
-                {/* ── CHANGE 2: Hide Explore Courses button for Admins/Instructors ── */}
-                {!isAuthenticated ? (
-                  <>
-                    <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
-                    <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Explore Courses</Button></Link>
-                    <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
-                  </>
-                ) : isAdminOrInstructor ? (
-                  // Admins/Instructors only see this one button
-                  <Link to={user?.role === 'instructor' ? '/instructor' : '/admin'}>
-                    <Button size="lg" className="anim-pulse-soft">Go to Dashboard <ArrowRight className="h-5 w-5" /></Button>
-                  </Link>
-                ) : (
-                  // Students see this
-                  <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
-                )}
+                {isAuthenticated
+                  ? <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
+                  : <>
+                      <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
+                      <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
+                      <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
+                    </>}
               </div>
               <div className="flex items-center gap-6 anim-fade-up anim-delay-400">
                 <div className="flex -space-x-3">
@@ -999,8 +1112,7 @@ export function LandingPage() {
       <AnimatedHowItWorksSection isAuthenticated={isAuthenticated} />
 
       {/* ── Popular Courses ── */}
-      {/* ── CHANGE 3: Conditionally hide Popular Courses for Admins/Instructors ── */}
-      {!isAdminOrInstructor && displayCourses.length > 0 && (
+      {displayCourses.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-12">
@@ -1021,6 +1133,9 @@ export function LandingPage() {
 
       {/* ── Testimonials Carousel ── */}
       <TestimonialsSection />
+
+      {/* ── Verify ── */}
+      <VerifySection />
 
       {/* ── Community Discussion (only for logged-in users) ── */}
       {isAuthenticated && <CommentsSection user={user} isAuthenticated={isAuthenticated} />}
