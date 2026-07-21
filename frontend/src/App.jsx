@@ -37,6 +37,8 @@ import LeaderboardPage          from './pages/Leaderboard/LeaderboardPage';
 import NotFoundPage             from './pages/NotFound/NotFoundPage';
 import AdminPage                from './pages/Admin/AdminPage';
 import ReceiptsPage             from './pages/Receipts/ReceiptsPage';
+// ── CHANGE 6: Import the new VerifyPage ──
+import VerifyPage               from './pages/Verify/VerifyPage';
 
 // ── Route Guards ──────────────────────────────────────────────────────────────
 function ProtectedRoute({ children, allowedRoles }) {
@@ -83,6 +85,8 @@ function AppRoutes() {
         <Route index element={<LandingPage />} />
         <Route path="courses" element={<CoursesPage />} />
         <Route path="courses/:courseId" element={<CourseDetailPage />} />
+        {/* ── CHANGE 7: Added the new /verify route ── */}
+        <Route path="verify" element={<VerifyPage />} />
       </Route>
 
       {/* ── Auth ── */}
