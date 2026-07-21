@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
 import {
   X, ChevronRight, LayoutDashboard, BookOpen, Home, Shield,
   GraduationCap, BarChart2, BookMarked, ShieldCheck, MessageSquare,
-  Info, Menu, LogOut
+  Info, Menu, LogOut, Search
 } from 'lucide-react';
 
 // Scroll to section by ID or navigate to landing page then scroll
@@ -65,12 +65,13 @@ export default function Navbar() {
   const isPublicPage = location.pathname === '/';
 
   // Nav links per role
+  // ── CHANGE 1: Removed 'Home' from instructor navLinks ──
   const navLinks = isAdmin ? [
     { href: '/',            label: 'Home',        icon: Home },
     { href: '/admin',       label: 'Admin Panel', icon: Shield },
     { href: '/instructor',  label: 'Instructor',  icon: GraduationCap },
   ] : isInstructor ? [
-    { href: '/',                        label: 'Home',        icon: Home },
+    // 'Home' is REMOVED for pure instructors
     { href: '/instructor',              label: 'Dashboard',   icon: LayoutDashboard },
     { href: '/instructor/courses',      label: 'My Courses',  icon: BookMarked },
     { href: '/instructor/analytics',    label: 'Analytics',   icon: BarChart2 },
@@ -86,10 +87,10 @@ export default function Navbar() {
     { href: '/courses', label: 'Courses', icon: BookOpen },
   ];
 
-  // Scroll buttons — visible to all roles
+  // ── CHANGE 2: Removed 'verify-section' from scrollButtons ──
+  // Instead of scrolling, we now have a direct link in the navbar
   const scrollButtons = [
-    { id: 'verify-section',   label: 'Verify',   icon: ShieldCheck },
-    { id: 'comments-section', label: 'Community',icon: MessageSquare },
+    { id: 'comments-section', label: 'Community', icon: MessageSquare },
     { id: 'about-section',    label: 'About',    icon: Info },
   ];
 
@@ -141,7 +142,13 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {/* Scroll buttons — only on landing-accessible pages */}
+            {/* ── CHANGE 3: Added direct Verify link ── */}
+            {/* Instead of scroll button, we use a direct Link to /verify */}
+            <Link to="/verify"
+              className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verify
+            </Link>
             {scrollButtons.map(btn => (
               <button key={btn.id}
                 onClick={() => handleScrollTo(btn.id)}
@@ -215,21 +222,25 @@ export default function Navbar() {
                 })}
               </nav>
 
-              {/* Scroll buttons */}
-              {scrollButtons.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 px-3">Quick Links</p>
-                  {scrollButtons.map(btn => (
-                    <button key={btn.id}
-                      onClick={() => { handleScrollTo(btn.id); closeMenu(); }}
-                      className="w-full flex items-center gap-4 rounded-xl px-4 py-3.5 text-foreground/80 hover:bg-muted border border-transparent transition-all">
-                      <btn.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                      <span className="text-sm font-semibold">{btn.label}</span>
-                      <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground/40" />
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* ── CHANGE 4: Added direct Verify link to mobile menu ── */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 px-3">Quick Links</p>
+                <Link to="/verify" onClick={closeMenu}
+                  className="flex items-center gap-4 rounded-xl px-4 py-3.5 text-foreground/80 hover:bg-muted border border-transparent transition-all">
+                  <ShieldCheck className="h-5 w-5 shrink-0 text-muted-foreground" />
+                  <span className="text-sm font-semibold">Verify</span>
+                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground/40" />
+                </Link>
+                {scrollButtons.map(btn => (
+                  <button key={btn.id}
+                    onClick={() => { handleScrollTo(btn.id); closeMenu(); }}
+                    className="w-full flex items-center gap-4 rounded-xl px-4 py-3.5 text-foreground/80 hover:bg-muted border border-transparent transition-all">
+                    <btn.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <span className="text-sm font-semibold">{btn.label}</span>
+                    <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground/40" />
+                  </button>
+                ))}
+              </div>
 
               {/* Auth / Profile section */}
               <div className="space-y-3 pt-4 border-t border-border">
