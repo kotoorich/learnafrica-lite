@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { LayoutDashboard, Plus, BarChart2, BookMarked, Settings, BookOpen, X, ChevronLeft, Ticket } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { LayoutDashboard, Plus, BarChart2, BookMarked, Settings, X, ChevronLeft, Ticket } from 'lucide-react';
 
 const sidebarLinks = [
   { href: '/instructor',               label: 'Overview',     Icon: LayoutDashboard },
@@ -14,10 +13,6 @@ const sidebarLinks = [
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
-  const { user } = useAuth();
-  // Sidebar is shared by approved Instructors and Admins/Superadmins.
-  // "Browse Courses" is student-facing — keep it for admins only.
-  const isAdmin = ['admin', 'superadmin'].includes(user?.role);
   return (
     <>
       {isOpen && <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden" onClick={onClose} />}
@@ -48,13 +43,6 @@ export default function Sidebar({ isOpen, onClose }) {
               );
             })}
           </nav>
-          {isAdmin && (
-            <div className="border-t border-border p-4">
-              <Link to="/courses" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <BookOpen className="h-4 w-4" /> Browse Courses
-              </Link>
-            </div>
-          )}
         </div>
       </aside>
     </>
