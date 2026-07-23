@@ -4,7 +4,8 @@ import {
   BookOpen, Users, Award, Play, CheckCircle, CheckCircle2, ArrowRight, Star,
   Zap, Target, TrendingUp, MessageSquare, Send, Trash2, Loader2,
   ShieldCheck, Search, XCircle, Quote, ChevronLeft, ChevronRight,
-  Heart, Reply, MoreHorizontal, Edit2, Check, X, ChevronDown, ChevronUp
+  Heart, Reply, MoreHorizontal, Edit2, Check, X, ChevronDown, ChevronUp,
+  LayoutDashboard, Shield
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
@@ -1012,8 +1013,11 @@ function AnimatedHowItWorksSection({ isAuthenticated }) {
 export function LandingPage() {
   const { user, courses, isAuthenticated } = useAuth();
 
-  // ── Define who should NOT see the Popular Courses and Explore Courses ──
-  const isAdminOrInstructor = isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'instructor');
+  // Admins and instructors get a different landing experience — no student
+  // course-shopping content, since it's not relevant to their role.
+  const isAdmin             = isAuthenticated && ['admin', 'superadmin'].includes(user?.role);
+  const isInstructor        = isAuthenticated && user?.role === 'instructor';
+  const isAdminOrInstructor = isAdmin || isInstructor;
 
   const displayCourses = courses.filter(c => !c.isEnrolled).slice(0, 3);
   const stats = [
@@ -1051,19 +1055,21 @@ export function LandingPage() {
                 Join thousands of learners across Africa gaining new skills and transforming their careers.
               </p>
               <div className="flex flex-wrap gap-4 anim-fade-up anim-delay-300">
-                {!isAuthenticated ? (
-                  <>
-                    <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
-                    <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
-                    <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
-                  </>
-                ) : isAdminOrInstructor ? (
-                  <Link to={user?.role === 'instructor' ? '/instructor' : '/admin'}>
-                    <Button size="lg" className="anim-pulse-soft">Go to Dashboard <ArrowRight className="h-5 w-5" /></Button>
-                  </Link>
-                ) : (
-                  <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
-                )}
+                {isAdminOrInstructor
+                  ? <Link to={isAdmin ? '/admin' : '/instructor'}>
+                      <Button size="lg" className="anim-pulse-soft">
+                        {isAdmin ? <Shield className="h-5 w-5" /> : <LayoutDashboard className="h-5 w-5" />}
+                        {isAdmin ? 'Go to Admin Panel' : 'Go to Dashboard'}
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </Link>
+                  : isAuthenticated
+                  ? <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
+                  : <>
+                      <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
+                      <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
+                      <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
+                    </>}
               </div>
               <div className="flex items-center gap-6 anim-fade-up anim-delay-400">
                 <div className="flex -space-x-3">
@@ -1120,7 +1126,7 @@ export function LandingPage() {
       {/* ── How It Works ── */}
       <AnimatedHowItWorksSection isAuthenticated={isAuthenticated} />
 
-      {/* ── Popular Courses ── */}
+      {/* ── Popular Courses (hidden for admins/instructors — student-facing content) ── */}
       {!isAdminOrInstructor && displayCourses.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
