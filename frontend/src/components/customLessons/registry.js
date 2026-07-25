@@ -18,6 +18,17 @@
 import HowToStudyGuide from './HowToStudyGuide';
 import CourseWelcome   from './CourseWelcome';
 import LearningRoadmap from './LearningRoadmap';
+import CppWelcomeLesson from './CppWelcomeLesson';
+import CppStructureIntroLesson from './CppStructureIntroLesson';
+import CppVariablesLesson from './CppVariablesLesson';
+import CppDataTypesLesson from './CppDataTypesLesson';
+import CppOperatorsLesson from './CppOperatorsLesson';
+import CppBasicIOLesson from './CppBasicIOLesson';
+import CppCalculatorExerciseLesson from './CppCalculatorExerciseLesson';
+import CppConditionalsLesson from './CppConditionalsLesson';
+import CppFinalProjectLesson from './CppFinalProjectLesson';
+
+
 
 export const customLessonRegistry = {
   'how-to-study': {
@@ -31,6 +42,42 @@ export const customLessonRegistry = {
   'learning-roadmap': {
     label: 'Learning Roadmap (What\'s Ahead)',
     component: LearningRoadmap,
+  },
+  'cpp-beginner-welcome': {
+  label: 'C++ Beginner: Welcome',
+  component: CppWelcomeLesson,
+  },
+  'cpp-structure-intro': {
+    label: 'C++: Anatomy of a Program',
+    component: CppStructureIntroLesson,
+  },
+  'cpp-variables': {
+    label: 'C++: Variables',
+    component: CppVariablesLesson,
+  },
+  'cpp-data-types': {
+    label: 'C++: Fundamental Data Types',
+    component: CppDataTypesLesson,
+  },
+  'cpp-operators': {
+    label: 'C++: Operators',
+    component: CppOperatorsLesson,
+  },
+  'cpp-basic-io': {
+    label: 'C++: Basic Input & Output',
+    component: CppBasicIOLesson,
+  },
+  'cpp-calculator-exercise': {
+    label: 'C++: Guided Exercise — Calculator',
+    component: CppCalculatorExerciseLesson,
+  },
+  'cpp-conditionals': {
+    label: 'C++: Conditionals (if/else/switch)',
+    component: CppConditionalsLesson,
+  },
+  'cpp-final-project-guessing-game': {
+    label: 'C++: Final Project — Guessing Game',
+    component: CppFinalProjectLesson,
   },
 };
 
