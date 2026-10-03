@@ -2927,94 +2927,6 @@ def create_app() -> Flask:
             pass
         return jsonify({'message': 'Deleted'})
     
-    # ── PAYMENTS (simulated — real integration point) ─────────────────────────────
-    @app.route('/api/payments/initiate', methods=['POST'])
-    @token_required
-    def initiate_payment():
-        d = request.get_json() or {}
-        course_id = d.get('course_id')
-        if not course_id:
-            return jsonify({'error': 'course_id required'}), 400
-        db = get_db()
-        c = db.execute('SELECT id, title, price, is_free FROM courses WHERE id=?', (course_id,)).fetchone()
-        if not c:
-            return jsonify({'error': 'Course not found'}), 404
-        if c['is_free']:
-            return jsonify({'error': 'Course is free — enroll directly'}), 400
-        # Check not already enrolled
-        if db.execute('SELECT id FROM user_enrollments WHERE user_id=? AND course_id=?',
-                      (g.current_user['user_id'], course_id)).fetchone():
-            return jsonify({'error': 'Already enrolled'}), 400
-        # Generate a payment reference
-        ref = f"LA-{str(uuid.uuid4())[:8].upper()}"
-        return jsonify({
-            'payment_ref': ref,
-            'course_id': course_id,
-            'course_title': c['title'],
-            'amount': c['price'],
-            'currency': 'GHS',
-            'status': 'pending'
-        })
-    
-    @app.route('/api/payments/confirm', methods=['POST'])
-    @token_required
-    def confirm_payment():
-        try:
-            """
-            In production this would verify with a payment provider (Stripe/Paystack).
-            For now we accept the reference and enroll the user.
-            """
-            d = request.get_json() or {}
-            course_id = d.get('course_id')
-            payment_ref = d.get('payment_ref')
-            # Simulate card validation
-            card = d.get('card', {})
-            if not all([card.get('number'), card.get('expiry'), card.get('cvv'), card.get('name')]):
-                return jsonify({'error': 'All card fields are required'}), 400
-            # Basic card number check (16 digits)
-            number = card['number'].replace(' ', '')
-            if not number.isdigit() or len(number) != 16:
-                return jsonify({'error': 'Invalid card number'}), 400
-            if not course_id or not payment_ref:
-                return jsonify({'error': 'course_id and payment_ref required'}), 400
-            db = get_db()
-            c = db.execute('SELECT id, title, price FROM courses WHERE id=?', (course_id,)).fetchone()
-            if not c:
-                return jsonify({'error': 'Course not found'}), 404
-            # Check not already enrolled
-            if db.execute('SELECT id FROM user_enrollments WHERE user_id=? AND course_id=?',
-                          (g.current_user['user_id'], course_id)).fetchone():
-                return jsonify({'message': 'Already enrolled', 'enrolled': True})
-            # Get lifetime access and enroll
-            _cp = db.execute('SELECT lifetime_access FROM course_perks WHERE course_id=?', (course_id,)).fetchone()
-            _lifetime = bool(_cp['lifetime_access']) if _cp else True
-            from datetime import timedelta as _td
-            _expires = None if _lifetime else (datetime.now() + _td(days=365)).isoformat()
-            db.execute('INSERT INTO user_enrollments (id,user_id,course_id,progress,expires_at) VALUES(?,?,?,0,?)',
-                       (str(uuid.uuid4()), g.current_user['user_id'], course_id, _expires))
-            db.execute('UPDATE courses SET enrollments=enrollments+1 WHERE id=?', (course_id,))
-            db.commit()
-            create_notification(db, g.current_user['user_id'], 'enrollment',
-                'Payment Successful! 🎉',
-                f'Your payment for "{c["title"]}" was successful. Happy learning!',
-                f'payment_{course_id}', app.config.get('USE_POSTGRES'))
-
-            return jsonify({
-                'message': 'Payment successful',
-                'enrolled': True,
-                'receipt': payment_ref,
-                'course_id': course_id
-            })
-    
-        except Exception as e:
-            import traceback
-            app.logger.error('confirm_payment error: ' + traceback.format_exc())
-            try:
-                db = getattr(g, '_db', None)
-                if db and hasattr(db, '_conn'): db._conn.rollback()
-            except Exception: pass
-            return jsonify({'error': 'Failed', 'detail': str(e)}), 500
-    
     # ── ADMIN EXTENDED CRUD ───────────────────────────────────────────────────────
     @app.route('/api/admin/users/<uid>', methods=['GET'])
     @admin_required
@@ -4857,6 +4769,9 @@ def create_app() -> Flask:
             },
             amount=amount, currency='GHS',
         )
+        payout_status = pay.get('status') or 'pending'
+        if payout_status not in ('success', 'pending'):
+            return {'ok': False, 'reason': pay.get('message') or 'Payout was not accepted by the payment provider.'}
         db.execute(
             '''INSERT INTO transactions
                (id, receipt_id, type, user_id, user_name, user_email,
@@ -4868,7 +4783,7 @@ def create_app() -> Flask:
             (pay['id'], pay['receipt_id'], 'payout',
              instructor_id, ur['name'], ur['email'],
              instructor_id, amount, 'GHS', amount, 0,
-             'success', pay['provider'], pay['provider_ref'],
+             payout_status, pay['provider'], pay['provider_ref'],
              ur['payment_method'], json.dumps(pd), 'n/a',
              f"Payout for {len(pending_rows)} purchase(s)")
         )
@@ -4883,7 +4798,9 @@ def create_app() -> Flask:
             'ok': True, 'amount': amount,
             'receipt_id': pay['receipt_id'], 'transaction_id': pay['id'],
             'provider': pay['provider'],
-            'message': f'Payout of GH₵ {amount:.2f} recorded for {ur["name"]}.',
+            'status': payout_status,
+            'message': (f'Payout of GH₵ {amount:.2f} sent to {ur["name"]}.' if payout_status == 'success'
+                        else f'Payout of GH₵ {amount:.2f} to {ur["name"]} is processing; it will be confirmed by the payment provider.'),
         }
 
     @app.route('/api/admin/payouts/pay/<instructor_id>', methods=['POST'])

@@ -136,6 +136,7 @@ def process_payout(instructor, amount, currency='GHS'):
             'provider': 'paystack',
             'provider_ref': result.get('reference', ''),
             'status': result.get('status', 'pending'),
+            'message': result.get('message', ''),
         }
 
     # Mock: record as immediately successful (mimics Paystack behavior)
@@ -264,6 +265,19 @@ def _paystack_verify(reference):
         return {'status': 'pending', 'verified': False, 'message': f'Verify error: {e}'}
 
 
+def _momo_bank_code(provider):
+    """Map a saved mobile money provider label (e.g. 'MTN MoMo', 'Vodafone Cash',
+    'Telecel Cash', 'AirtelTigo Money') to its Paystack bank code."""
+    p = (provider or '').strip().lower()
+    if 'mtn' in p:
+        return 'MTN'
+    if 'vodafone' in p or 'telecel' in p or p == 'vod':
+        return 'VOD'
+    if 'airtel' in p or 'tigo' in p or p == 'atl':
+        return 'ATL'
+    return None
+
+
 def _paystack_transfer(instructor, amount, currency, txn_id):
     """Send money to the instructor's registered momo or bank account via Paystack Transfers.
 
@@ -308,8 +322,10 @@ def _paystack_transfer(instructor, amount, currency, txn_id):
     if method == 'momo':
         # Paystack MoMo provider codes:
         #   MTN → 'MTN',  Vodafone → 'VOD',  AirtelTigo → 'ATL'
-        provider_map = {'MTN': 'MTN', 'Vodafone': 'VOD', 'AirtelTigo': 'ATL'}
-        prov_code = provider_map.get(pd.get('provider', 'MTN'), 'MTN')
+        prov_code = _momo_bank_code(pd.get('provider'))
+        if not prov_code:
+            return {'reference': f'BAD-PROVIDER-{txn_id}', 'status': 'failed',
+                    'message': f"Unsupported mobile money provider: {pd.get('provider') or '(none)'}"}
         phone = (pd.get('phone') or '').replace(' ', '').replace('-', '')
         if not phone:
             return {'reference': f'NO-PHONE-{txn_id}', 'status': 'failed',
@@ -391,7 +407,9 @@ def _paystack_transfer(instructor, amount, currency, txn_id):
         return {
             'reference': data.get('reference') or txn_id,
             # Paystack transfer statuses: 'success', 'pending', 'otp', 'reversed', 'failed'
-            'status':    data.get('status', 'pending') if data.get('status') != 'success' else 'success',
+            'status':    ('success' if data.get('status') == 'success'
+                          else 'failed' if data.get('status') in ('failed', 'reversed')
+                          else 'pending'),
             'message':   'Transfer initiated. Webhook will confirm final status.',
         }
     except requests.exceptions.RequestException as e:
