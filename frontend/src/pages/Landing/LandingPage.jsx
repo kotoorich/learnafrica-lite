@@ -4,7 +4,8 @@ import {
   BookOpen, Users, Award, Play, CheckCircle, CheckCircle2, ArrowRight, Star,
   Zap, Target, TrendingUp, MessageSquare, Send, Trash2, Loader2,
   ShieldCheck, Search, XCircle, Quote, ChevronLeft, ChevronRight,
-  Heart, Reply, MoreHorizontal, Edit2, Check, X, ChevronDown, ChevronUp
+  Heart, Reply, MoreHorizontal, Edit2, Check, X, ChevronDown, ChevronUp,
+  LayoutDashboard, PlusCircle, BarChart2, Receipt, Trophy, Wallet, Ticket, Settings
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
@@ -1069,10 +1070,112 @@ function AnimatedHowItWorksSection({ isAuthenticated }) {
 }
 
 // ── Main LandingPage ────────────────────────────────────────────────────────
+function heroFor(user, isAuthenticated) {
+  if (!isAuthenticated) {
+    return {
+      badge: 'Built in Ghana, for learners across Africa',
+      title: <>Learn skills that open doors, <span className="text-primary">right here in Africa</span></>,
+      text: 'Practical courses from people who understand your world. Learn on your phone at your own pace, earn a certificate anyone can verify, and grow with a community that cheers you on.',
+      primary: { to: '/signup', label: 'Get Started Free' },
+      secondary: [
+        { to: '/courses', label: 'Browse Courses', icon: Play },
+        { to: '/login', label: 'Login' },
+      ],
+    };
+  }
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'friend';
+  const title = <>Welcome back, <span className="text-primary">{firstName}</span></>;
+  const badge = `${greeting}! Great to see you again`;
+  const role = user?.role;
+
+  if (['admin', 'superadmin'].includes(role)) {
+    return {
+      badge, title,
+      text: 'Thanks for keeping LearnAfrica running. Review applications, look after courses and keep an eye on how learners are doing.',
+      primary: { to: '/admin', label: 'Open Admin Panel' },
+      secondary: [{ to: '/instructor/courses', label: 'Manage Courses' }],
+      actions: [
+        { to: '/admin', label: 'Admin Panel', desc: 'Users, applications & stats', icon: LayoutDashboard },
+        { to: '/instructor/courses', label: 'Manage Courses', desc: 'Create and edit courses', icon: BookOpen },
+        { to: '/receipts', label: 'Receipts', desc: 'Payment history', icon: Receipt },
+        { to: '/settings', label: 'Settings', desc: 'Account preferences', icon: Settings },
+      ],
+    };
+  }
+  if (role === 'instructor' && ['pending', 'rejected'].includes(user?.instructor_status)) {
+    return {
+      badge, title,
+      text: "Your instructor application is with our team. Make sure your payout method is saved on your Profile; we'll let you know as soon as you're approved.",
+      primary: { to: '/instructor', label: 'View Application Status' },
+      secondary: [{ to: '/profile', label: 'Add Payout Method' }],
+      actions: [
+        { to: '/instructor', label: 'Application Status', desc: 'See where things stand', icon: LayoutDashboard },
+        { to: '/profile', label: 'Payout Method', desc: 'Required before approval', icon: Wallet },
+        { to: '/settings', label: 'Settings', desc: 'Account preferences', icon: Settings },
+      ],
+    };
+  }
+  if (role === 'instructor') {
+    return {
+      badge, title,
+      text: 'Your students are learning from you right now. See how your courses are doing, or share something new today.',
+      primary: { to: '/instructor', label: 'Go to My Dashboard' },
+      secondary: [{ to: '/instructor/courses/create', label: 'Create a Course', icon: PlusCircle }],
+      actions: [
+        { to: '/instructor/courses', label: 'My Courses', desc: 'Edit and publish', icon: BookOpen },
+        { to: '/instructor/analytics', label: 'Analytics', desc: 'Students & progress', icon: BarChart2 },
+        { to: '/instructor/coupons', label: 'Coupons', desc: 'Discounts for students', icon: Ticket },
+        { to: '/instructor/receipts', label: 'Earnings', desc: 'Receipts & payouts', icon: Wallet },
+      ],
+    };
+  }
+  return {
+    badge, title,
+    text: 'Pick up where you left off, or discover something new to learn today. Every lesson brings you closer to your goal.',
+    primary: { to: '/dashboard', label: 'Continue Learning' },
+    secondary: [{ to: '/courses', label: 'Explore Courses', icon: Play }],
+    actions: [
+      { to: '/dashboard', label: 'My Learning', desc: 'Your courses & progress', icon: LayoutDashboard },
+      { to: '/courses', label: 'Explore Courses', desc: 'Find your next skill', icon: Search },
+      { to: '/dashboard/leaderboard', label: 'Leaderboard', desc: 'See how you rank', icon: Trophy },
+      { to: '/receipts', label: 'Receipts', desc: 'Your purchases', icon: Receipt },
+    ],
+  };
+}
+
+function QuickActions({ actions }) {
+  return (
+    <section className="py-10 border-b border-border bg-muted/20">
+      <div className="container mx-auto px-4">
+        <h2 className="text-lg font-semibold mb-4">Jump back in</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {actions.map(({ to, label, desc, icon: Icon }) => (
+            <Link key={label} to={to}
+              className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3 sm:p-4 hover-lift transition-colors hover:border-primary/40">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold group-hover:text-primary">{label}</span>
+                <span className="block text-xs text-muted-foreground leading-snug">{desc}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function LandingPage() {
   const { user, courses, isAuthenticated } = useAuth();
 
-  const displayCourses = courses.filter(c => !c.isEnrolled).slice(0, 3);
+  // Course browsing is for visitors and students only.
+  const canBrowse = !isAuthenticated || user?.role === 'student';
+  const hero = heroFor(user, isAuthenticated);
+  const displayCourses = canBrowse ? courses.filter(c => !c.isEnrolled).slice(0, 3) : [];
   const stats = [
     { value: '50K+',                      label: 'Active Learners' },
     { value: `${courses.length}+`,        label: 'Expert Courses'  },
@@ -1098,30 +1201,26 @@ export function LandingPage() {
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background/60 lg:bg-gradient-to-r lg:from-background lg:via-background/75 lg:to-background/5" />
         </div>
 
         <div className="container mx-auto px-4 relative">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary anim-fade-up">
-                <Zap className="h-4 w-4" /> New courses added weekly
+                <Zap className="h-4 w-4" /> {hero.badge}
               </div>
               <h1 className="text-4xl font-extrabold sm:text-5xl lg:text-6xl anim-fade-up anim-delay-100">
-                Unlock Your Potential with{' '}
-                <span className="text-primary">World-Class</span> Education
+                {hero.title}
               </h1>
               <p className="text-lg text-muted-foreground anim-fade-up anim-delay-200">
-                Join thousands of learners across Africa gaining new skills and transforming their careers.
+                {hero.text}
               </p>
               <div className="flex flex-wrap gap-4 anim-fade-up anim-delay-300">
-                {isAuthenticated
-                  ? <Link to="/courses"><Button size="lg" className="anim-pulse-soft">Explore Courses <ArrowRight className="h-5 w-5" /></Button></Link>
-                  : <>
-                      <Link to="/signup"><Button size="lg" className="anim-pulse-soft">Get Started Free <ArrowRight className="h-5 w-5" /></Button></Link>
-                      <Link to="/courses"><Button variant="outline" size="lg"><Play className="h-5 w-5" />Browse Courses</Button></Link>
-                      <Link to="/login"><Button variant="outline" size="lg">Login</Button></Link>
-                    </>}
+                <Link to={hero.primary.to}><Button size="lg" className="anim-pulse-soft">{hero.primary.label} <ArrowRight className="h-5 w-5" /></Button></Link>
+                {hero.secondary.map(({ to, label, icon: Icon }) => (
+                  <Link key={to} to={to}><Button variant="outline" size="lg" className="bg-background/70">{Icon && <Icon className="h-5 w-5" />}{label}</Button></Link>
+                ))}
               </div>
               <div className="flex items-center gap-6 anim-fade-up anim-delay-400">
                 <div className="flex -space-x-3">
@@ -1168,6 +1267,8 @@ export function LandingPage() {
         </div>
       </section>
 
+      {hero.actions && <QuickActions actions={hero.actions} />}
+
       {/* ── Stats ── */}
       <AnimatedStatsSection stats={stats} />
 
@@ -1176,7 +1277,7 @@ export function LandingPage() {
 
 
       {/* ── How It Works ── */}
-      <AnimatedHowItWorksSection isAuthenticated={isAuthenticated} />
+      {canBrowse && <AnimatedHowItWorksSection isAuthenticated={isAuthenticated} />}
 
       {/* ── Popular Courses ── */}
       {displayCourses.length > 0 && (

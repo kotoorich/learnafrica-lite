@@ -171,7 +171,7 @@ export default function Navbar() {
 
           {/* Mobile: always-visible theme toggle + hamburger */}
           <div className="lg:hidden flex items-center gap-2 shrink-0">
-            <ThemeToggle />
+            <ThemeToggle compact />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"

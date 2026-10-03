@@ -1,32 +1,36 @@
 import { Link } from 'react-router-dom';
 import Logo from '../common/Logo';
+import { useAuth } from '../../context/AuthContext';
 
-const footerLinks = {
-  platform: [
-    { label: 'Courses', href: '/courses' },
-    { label: 'Become an Instructor', href: '/instructor' },
-    { label: 'Pricing', href: '#' },
-    { label: 'Enterprise', href: '#' },
-  ],
-  resources: [
-    { label: 'Blog', href: '#' },
-    { label: 'Help Center', href: '#' },
-    { label: 'Community', href: '#' },
-    { label: 'Webinars', href: '#' },
-  ],
-  company: [
-    { label: 'About Us', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Contact', href: '#' },
-    { label: 'Partners', href: '#' },
-  ],
-  legal: [
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Cookie Policy', href: '#' },
-    { label: 'Accessibility', href: '#' },
-  ],
-};
+const SUPPORT_LINKS = [
+  { label: 'Email support', href: 'mailto:support@learnafrica.com' },
+  { label: 'Call or WhatsApp', href: 'tel:+233256411155' },
+  { label: 'Verify a certificate', href: '/#verify-section' },
+];
+
+function platformLinksFor(user, isAuthenticated) {
+  const role = user?.role;
+  if (!isAuthenticated) return [
+    { label: 'Browse Courses', href: '/courses' },
+    { label: 'Become an Instructor', href: '/signup' },
+    { label: 'Sign In', href: '/login' },
+  ];
+  if (role === 'student') return [
+    { label: 'Browse Courses', href: '/courses' },
+    { label: 'My Dashboard', href: '/dashboard' },
+    { label: 'My Receipts', href: '/receipts' },
+  ];
+  if (['admin', 'superadmin'].includes(role)) return [
+    { label: 'Admin Panel', href: '/admin' },
+    { label: 'Manage Courses', href: '/instructor/courses' },
+    { label: 'Receipts', href: '/receipts' },
+  ];
+  return [
+    { label: 'Instructor Dashboard', href: '/instructor' },
+    { label: 'My Courses', href: '/instructor/courses' },
+    { label: 'Receipts', href: '/instructor/receipts' },
+  ];
+}
 
 const socialIcons = {
   facebook: (
@@ -52,13 +56,15 @@ const socialIcons = {
 };
 
 export default function Footer() {
+  const { user, isAuthenticated } = useAuth();
+  const platformLinks = platformLinksFor(user, isAuthenticated);
   return (
     <footer id="about-section" className="border-t border-border bg-card">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Brand Column — spans the full row on mobile so it isn't
               squeezed into half-width alongside a links column */}
-          <div className="col-span-2 md:col-span-1 lg:col-span-2">
+          <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2">
               <Logo size={40} />
               <span className="text-xl font-bold text-foreground">
@@ -66,7 +72,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground max-w-xs">
-              Empowering learners across Africa with world-class online education. Start your learning journey today.
+              Practical, affordable learning for Africans, built in Ghana. Learn at your own pace, earn a certificate you can verify, and grow with people who understand your journey.
             </p>
 
             <div className="mt-6 space-y-2">
@@ -109,12 +115,9 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Platform</h4>
             <ul className="space-y-2">
-              {footerLinks.platform.map((link) => (
+              {platformLinks.map((link) => (
                 <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
+                  <Link to={link.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
                     {link.label}
                   </Link>
                 </li>
@@ -123,66 +126,17 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Resources</h4>
+            <h4 className="font-semibold text-foreground mb-4">Support</h4>
             <ul className="space-y-2">
-              {footerLinks.resources.map((link) => (
+              {SUPPORT_LINKS.map((link) => (
                 <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
                     {link.label}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
-
-          <div>
-            <h4 className="font-semibold text-foreground mb-4">Company</h4>
-            <ul className="space-y-2">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="hidden md:block">
-            <h4 className="font-semibold text-foreground mb-4">Legal</h4>
-            <ul className="space-y-2">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Condensed legal row, mobile only — tablet and desktop keep the
-            full Legal column above exactly as it was. */}
-        <div className="md:hidden mt-8 flex flex-wrap justify-center gap-x-4 gap-y-2">
-          {footerLinks.legal.map((link) => (
-            <Link
-              key={link.label}
-              to={link.href}
-              className="text-xs text-muted-foreground transition-colors hover:text-primary"
-            >
-              {link.label}
-            </Link>
-          ))}
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">

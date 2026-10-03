@@ -72,7 +72,7 @@ function StatTile({ icon: Icon, value, label, theme }) {
       </div>
       <div className="min-w-0">
         <p className="text-lg md:text-xl font-bold tracking-tight text-foreground truncate">{value}</p>
-        <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight truncate">{label}</p>
+        <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-wide md:tracking-widest leading-tight break-words">{label}</p>
       </div>
     </div>
   );

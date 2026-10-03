@@ -214,7 +214,7 @@ def full_user(db, uid: str, use_postgres: bool) -> dict:
         ],
         'stats': {
             'lessons_completed':  (stats['lessons_completed']  if stats else 0),
-            'courses_completed':  (stats['courses_completed']  if stats else 0),
+            'courses_completed':  sum(1 for e in enrollments if (e['progress'] or 0) >= 100),
             'perfect_quizzes':    (stats['perfect_quizzes']    if stats else 0),
             'streak':             (stats['streak']             if stats else 0),
             'total_earnings':     float(_safe_get(stats, 'total_earnings') if stats and _safe_get(stats, 'total_earnings') else 0),

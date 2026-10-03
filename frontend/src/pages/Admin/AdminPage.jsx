@@ -338,7 +338,9 @@ export default function AdminPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border pb-4 overflow-x-auto scrollbar-thin -mx-2 px-2 [&::-webkit-scrollbar]:h-1">
+      <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 bottom-4 w-10 bg-gradient-to-l from-background to-transparent md:hidden z-10" />
+      <div className="flex gap-2 border-b border-border pb-4 pr-8 md:pr-2 overflow-x-auto scrollbar-thin -mx-2 px-2 [&::-webkit-scrollbar]:h-1">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={cn('px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5',
@@ -357,6 +359,7 @@ export default function AdminPage() {
             )}
           </button>
         ))}
+      </div>
       </div>
 
       {loading ? (
@@ -704,15 +707,15 @@ export default function AdminPage() {
                     <h2 className="font-bold text-base">Platform Earnings Overview</h2>
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div className="text-center p-3 bg-background rounded-xl border border-border">
-                        <p className="text-2xl font-bold">${(earnings.total_gross||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+                        <p className="text-2xl font-bold">{formatPrice(earnings.total_gross || 0)}</p>
                         <p className="text-xs text-muted-foreground mt-1">Gross Revenue</p>
                       </div>
                       <div className="text-center p-3 bg-primary/5 rounded-xl border border-primary/20">
-                        <p className="text-2xl font-bold text-primary">${(earnings.instructors_total||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+                        <p className="text-2xl font-bold text-primary">{formatPrice(earnings.instructors_total || 0)}</p>
                         <p className="text-xs text-muted-foreground mt-1">To Instructors ({earnings.instructor_share_pct}%)</p>
                       </div>
                       <div className="text-center p-3 bg-success/5 rounded-xl border border-success/20">
-                        <p className="text-2xl font-bold text-success">${(earnings.platform_total||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+                        <p className="text-2xl font-bold text-success">{formatPrice(earnings.platform_total || 0)}</p>
                         <p className="text-xs text-muted-foreground mt-1">Platform ({earnings.admin_share_pct}%)</p>
                       </div>
                     </div>

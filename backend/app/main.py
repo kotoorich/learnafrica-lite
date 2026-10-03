@@ -660,6 +660,40 @@ def create_app() -> Flask:
             except Exception: pass
             return jsonify({'error': 'Failed to create account', 'detail': str(e)}), 500
     
+    def _user_role(db, user_id):
+        row = db.execute('SELECT role FROM users WHERE id=?', (user_id,)).fetchone()
+        return row['role'] if row else None
+
+    def _instructor_missing_payout(db, user_id):
+        """True when user_id is a non-admin account with no saved payout method."""
+        ensure_column(db, 'users', 'payment_method', 'TEXT')
+        ensure_column(db, 'users', 'payment_details', 'TEXT')
+        row = db.execute('SELECT role, payment_method, payment_details FROM users WHERE id=?', (user_id,)).fetchone()
+        if not row or row['role'] in ('admin', 'superadmin'):
+            return False
+        return not (row['payment_method'] and row['payment_details'])
+
+    def _touch_streak(db, user_id):
+        """Daily streak: same day keeps it, the next day adds 1, a missed day resets to 1."""
+        try:
+            row = db.execute('SELECT streak, last_activity FROM user_stats WHERE user_id=?', (user_id,)).fetchone()
+            if not row:
+                return
+            today = datetime.now().date()
+            last = str(row['last_activity'] or '')[:10]
+            if last == today.isoformat():
+                return
+            yesterday = (today - timedelta(days=1)).isoformat()
+            streak = int(row['streak'] or 0) + 1 if last == yesterday else 1
+            db.execute('UPDATE user_stats SET streak=?, last_activity=? WHERE user_id=?',
+                       (streak, today.isoformat(), user_id))
+            db.commit()
+        except Exception as ex:
+            app.logger.warning(f'streak update failed: {ex}')
+            try:
+                if hasattr(db, '_conn'): db._conn.rollback()
+            except Exception: pass
+
     @app.route('/api/auth/login', methods=['POST'])
     def login():
         if not request.is_json: return jsonify({'error': 'JSON required'}), 400
@@ -673,8 +707,7 @@ def create_app() -> Flask:
         if not u or not check_password_hash(u['password_hash'], pw):
             return jsonify({'error': 'Invalid email or password'}), 401
     
-        db.execute('UPDATE user_stats SET last_activity=CURRENT_DATE WHERE user_id=?',(u['id'],))
-        db.commit()
+        _touch_streak(db, u['id'])
         token = generate_token(u['id'], u['email'], u['role'])
         return jsonify({'token': token, 'user': full_user(db, u['id'], app.config.get('USE_POSTGRES'))})
     
@@ -682,7 +715,9 @@ def create_app() -> Flask:
     @app.route('/api/auth/verify', methods=['GET'])
     @token_required
     def verify():
-        u = full_user(get_db(), g.current_user['user_id'], app.config.get('USE_POSTGRES'))
+        db = get_db()
+        _touch_streak(db, g.current_user['user_id'])
+        u = full_user(db, g.current_user['user_id'], app.config.get('USE_POSTGRES'))
         if not u: return jsonify({'error': 'User not found'}), 404
         return jsonify({'valid': True, 'user': u})
     
@@ -1089,6 +1124,8 @@ def create_app() -> Flask:
     @token_required
     def enroll(cid):
         db = get_db()
+        if _user_role(db, g.current_user['user_id']) != 'student':
+            return jsonify({'error': 'Only student accounts can enroll in courses.'}), 403
         if not db.execute('SELECT id FROM courses WHERE id=?',(cid,)).fetchone():
             return jsonify({'error': 'Course not found'}), 404
         if db.execute('SELECT id FROM user_enrollments WHERE user_id=? AND course_id=?',
@@ -1237,10 +1274,13 @@ def create_app() -> Flask:
             try:
                 db.execute(
                     'UPDATE user_stats SET lessons_completed=('
-                    'SELECT COUNT(*) FROM user_progress WHERE user_id=? AND is_completed=1) WHERE user_id=?',
-                    (uid, uid)
+                    'SELECT COUNT(*) FROM user_progress WHERE user_id=? AND is_completed=1), '
+                    'courses_completed=('
+                    'SELECT COUNT(*) FROM user_enrollments WHERE user_id=? AND progress>=100) WHERE user_id=?',
+                    (uid, uid, uid)
                 )
                 db.commit()
+                _touch_streak(db, uid)
             except Exception as ex:
                 app.logger.warning(f'user_stats update failed: {ex}')
                 try:
@@ -1506,6 +1546,8 @@ def create_app() -> Flask:
             ins = db.execute('SELECT name,avatar FROM users WHERE id=?',(g.current_user['user_id'],)).fetchone()
             cid = str(uuid.uuid4())
             price = float(d.get('price', 0))
+            if price > 0 and _instructor_missing_payout(db, g.current_user['user_id']):
+                return jsonify({'error': 'Add a payout method on your Profile page before creating a paid course.'}), 400
             # Parse time-tracking fields (optional, default off)
             min_time_seconds = int(d.get('min_time_seconds') or 0)
             enforce_min_time = 1 if d.get('enforce_min_time') else 0
@@ -1794,6 +1836,11 @@ def create_app() -> Flask:
             if row['instructor_id'] != g.current_user['user_id'] and g.current_user['role'] not in ('admin','superadmin'):
                 return jsonify({'error': 'Forbidden'}), 403
             d = request.get_json() or {}
+            if 'price' in d and float(d['price'] or 0) > 0 and _instructor_missing_payout(db, row['instructor_id']):
+                msg = ('Add a payout method on your Profile page before making this course paid.'
+                       if row['instructor_id'] == g.current_user['user_id']
+                       else 'The course instructor must add a payout method before this course can be paid.')
+                return jsonify({'error': msg}), 400
     
             # Update core fields
             fields, vals = [], []
@@ -2004,14 +2051,11 @@ def create_app() -> Flask:
             'SELECT COUNT(DISTINCT user_id) as t FROM user_enrollments WHERE course_id IN (' + ph + ')',
             course_ids).fetchone()
         total_students = int(st['t'] or 0) if st else 0
+        ensure_transactions_table(db)
         earnings_row = db.execute(
-            'SELECT SUM(c.price * COALESCE(e.cnt, 0)) as t'
-            ' FROM courses c LEFT JOIN'
-            ' (SELECT course_id, COUNT(*) as cnt FROM user_enrollments GROUP BY course_id) e'
-            ' ON e.course_id = c.id WHERE c.id IN (' + ph + ')', course_ids).fetchone()
-        gross = float(earnings_row['t'] or 0) if earnings_row else 0.0
-        instructor_pct, _ = get_revenue_split(db)
-        total_earnings = round(gross * instructor_pct / 100, 2)
+            "SELECT COALESCE(SUM(instructor_share), 0) as t FROM transactions"
+            " WHERE instructor_id=? AND type='purchase' AND status='success'", (uid,)).fetchone()
+        total_earnings = round(float(earnings_row['t'] or 0), 2) if earnings_row else 0.0
         avg_row = db.execute(
             'SELECT AVG(rating) as a FROM reviews WHERE course_id IN (' + ph + ')',
             course_ids).fetchone()
@@ -2419,17 +2463,17 @@ def create_app() -> Flask:
                                        FROM courses c JOIN users u ON u.id=c.instructor_id
                                        ORDER BY c.created_at DESC LIMIT 10''').fetchall()
         # Platform revenue calculations
+        ensure_transactions_table(db)
         rev = db.execute(
-            'SELECT SUM(c.price * COALESCE(e.cnt,0)) as t'
-            ' FROM courses c'
-            ' LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM user_enrollments GROUP BY course_id) e'
-            ' ON e.course_id = c.id'
-            ' WHERE c.is_free=0'
+            "SELECT COALESCE(SUM(t.amount), 0) as gross,"
+            " COALESCE(SUM(CASE WHEN u.role IN ('admin','superadmin') THEN 0 ELSE t.instructor_share END), 0) as owed"
+            " FROM transactions t LEFT JOIN users u ON u.id = t.instructor_id"
+            " WHERE t.type='purchase' AND t.status='success'"
         ).fetchone()
-        gross = float(rev['t'] or 0)
+        gross = float(rev['gross'] or 0)
         instructor_pct, admin_pct = get_revenue_split(db)
-        platform_earnings  = round(gross * (admin_pct / 100), 2)
-        instructors_payout = round(gross * (instructor_pct / 100), 2)
+        instructors_payout = round(float(rev['owed'] or 0), 2)
+        platform_earnings  = round(gross - instructors_payout, 2)
     
         return jsonify({
             'total_users': total_users,
@@ -2545,6 +2589,9 @@ def create_app() -> Flask:
             
             app_row = db.execute('SELECT * FROM instructor_applications WHERE user_id=?',(uid,)).fetchone()
             if not app_row: return jsonify({'error': 'Application not found'}), 404
+            if action == 'approve' and _instructor_missing_payout(db, uid):
+                return jsonify({'error': 'This applicant has not added a payout method yet. '
+                                         'They must add one on their Profile page before they can be approved.'}), 400
             new_status = 'approved' if action == 'approve' else 'rejected'
             
             # Try full update first; fall back to minimal if columns missing
@@ -4002,35 +4049,42 @@ def create_app() -> Flask:
         """Detailed earnings breakdown per instructor."""
         db = get_db()
         instructor_pct, admin_pct = get_revenue_split(db)
+        ensure_transactions_table(db)
         instructors = db.execute('''
-            SELECT u.id, u.name, u.email, u.avatar,
-                   COUNT(DISTINCT c.id) as course_count,
-                   COALESCE(SUM(c.price * (SELECT COUNT(*) FROM user_enrollments WHERE course_id=c.id)), 0) as gross
+            SELECT u.id, u.name, u.email, u.avatar, u.role,
+                   (SELECT COUNT(*) FROM courses c WHERE c.instructor_id=u.id AND c.is_free=0) as course_count,
+                   COALESCE(SUM(t.amount), 0) as gross,
+                   COALESCE(SUM(t.instructor_share), 0) as instr
             FROM users u
-            JOIN courses c ON c.instructor_id=u.id
-            WHERE c.is_free=0
-            GROUP BY u.id
+            LEFT JOIN transactions t
+              ON t.instructor_id=u.id AND t.type='purchase' AND t.status='success'
+            WHERE EXISTS (SELECT 1 FROM courses c WHERE c.instructor_id=u.id AND c.is_free=0)
+            GROUP BY u.id, u.name, u.email, u.avatar, u.role
             ORDER BY gross DESC
         ''').fetchall()
         result = []
-        total_gross = 0
+        total_gross = 0.0
+        total_instr = 0.0
         for row in instructors:
-            gross = float(row['gross'] or 0) if row else 0.0
+            gross = float(row['gross'] or 0)
+            # Admin-owned course revenue stays with the platform.
+            instr = 0.0 if row['role'] in ('admin', 'superadmin') else float(row['instr'] or 0)
             total_gross += gross
+            total_instr += instr
             result.append({
                 'id': row['id'],
                 'name': row['name'],
                 'email': row['email'],
                 'course_count': row['course_count'],
                 'gross_revenue': round(gross, 2),
-                'instructor_earnings': round(gross * (instructor_pct / 100), 2),
-                'platform_earnings':   round(gross * (admin_pct / 100), 2),
+                'instructor_earnings': round(instr, 2),
+                'platform_earnings':   round(gross - instr, 2),
             })
         return jsonify({
             'instructors': result,
             'total_gross': round(total_gross, 2),
-            'platform_total': round(total_gross * (admin_pct / 100), 2),
-            'instructors_total': round(total_gross * (instructor_pct / 100), 2),
+            'platform_total': round(total_gross - total_instr, 2),
+            'instructors_total': round(total_instr, 2),
             'instructor_share_pct': instructor_pct,
             'admin_share_pct': admin_pct,
         })
@@ -4465,6 +4519,8 @@ def create_app() -> Flask:
 
             if method not in ('momo', 'bank'):
                 return jsonify({'error': 'method must be "momo" or "bank"'}), 400
+            if country != 'GH':
+                return jsonify({'error': 'Payouts are currently only available to Ghana accounts.'}), 400
             if not isinstance(details, dict):
                 return jsonify({'error': 'details must be an object'}), 400
 
@@ -5011,6 +5067,9 @@ def create_app() -> Flask:
         """
         try:
             from .payments import initiate_payment, compute_split
+
+            if _user_role(get_db(), g.current_user['user_id']) != 'student':
+                return jsonify({'error': 'Only student accounts can buy courses.'}), 403
 
             body = request.get_json() or {}
             payment_method  = body.get('payment_method') or 'card'

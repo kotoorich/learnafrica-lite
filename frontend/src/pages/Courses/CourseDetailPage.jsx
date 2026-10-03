@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Clock, Users, Star, BookOpen, Play, CheckCircle, ChevronDown, ChevronUp,
   Award, Globe, Calendar, AlertCircle, Lock, Loader2, Send,
@@ -145,6 +145,8 @@ export function CourseDetailPage() {
 
   const alreadyReviewed       = reviews.some(r => r.user_id === user?.id);
   const isInstructorOfCourse  = user && course && String(user.id) === String(course.instructor_id);
+  // Only visitors and students can enroll or buy; admins and course owners view read-only.
+  const canEnroll = !user || user.role === 'student';
 
   const lessons = course?.lessons || [];
   const completedLessonsCount = lessons.filter(l => l.isCompleted).length;
@@ -188,6 +190,7 @@ export function CourseDetailPage() {
       navigate(`/login?returnUrl=${encodeURIComponent(`/courses/${courseId}`)}`);
       return;
     }
+    if (!canEnroll) return;
     if (!isFree && course.price > 0) {
       navigate(`/payment/${courseId}`);
       return;
@@ -252,6 +255,10 @@ export function CourseDetailPage() {
   const relatedCourses = useMemo(() =>
     courses.filter(c => c.id !== courseId && c.category === course?.category).slice(0, 3),
   [courses, courseId, course]);
+
+  if (!isLoading && course && user?.role === 'instructor' && !isInstructorOfCourse && !isPreviewMode) {
+    return <Navigate to="/instructor" replace />;
+  }
 
   if (isLoading || authLoading) return (
     <div className="container py-20 flex justify-center">
@@ -433,9 +440,16 @@ export function CourseDetailPage() {
                               </span>
                             </>}
                       </div>
-                      <Button className="w-full" size="lg" onClick={handleEnroll}>
-                        {!user ? 'Sign in to Enroll' : isFree ? 'Enroll for Free' : 'Buy Now'}
-                      </Button>
+                      {canEnroll ? (
+                        <Button className="w-full" size="lg" onClick={handleEnroll}>
+                          {!user ? 'Sign in to Enroll' : isFree ? 'Enroll for Free' : 'Buy Now'}
+                        </Button>
+                      ) : (
+                        <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-center text-muted-foreground">
+                          You're viewing this course as {isInstructorOfCourse ? 'its instructor' : 'an admin'}.
+                          Students see the {isFree ? 'enroll' : 'payment'} button here.
+                        </p>
+                      )}
                     </>
                   )}
 
@@ -743,7 +757,7 @@ export function CourseDetailPage() {
               <div className="space-y-6 pt-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl md:text-2xl font-bold tracking-tight">Related Courses</h2>
-                  <Link to="/courses" className="text-sm font-medium text-primary hover:underline">View all</Link>
+                  {canEnroll && <Link to="/courses" className="text-sm font-medium text-primary hover:underline">View all</Link>}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {relatedCourses.map(c => (

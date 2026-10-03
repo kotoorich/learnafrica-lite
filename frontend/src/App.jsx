@@ -64,8 +64,18 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
     // Instructors go to instructor dashboard, not student dashboard
     if (user?.role === 'instructor') return <Navigate to="/instructor" replace />;
+    if (['admin','superadmin'].includes(user?.role)) return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
   }
+  return children;
+}
+
+// The course catalogue is for visitors and students only.
+function CatalogRoute({ children }) {
+  const { isLoading, user } = useAuth();
+  if (isLoading) return <RouteLoadingScreen />;
+  if (['admin','superadmin'].includes(user?.role)) return <Navigate to="/admin" replace />;
+  if (user?.role === 'instructor') return <Navigate to="/instructor" replace />;
   return children;
 }
 
@@ -155,7 +165,7 @@ function AppRoutes() {
       {/* ── Public ── */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<LandingPage />} />
-        <Route path="courses" element={<CoursesPage />} />
+        <Route path="courses" element={<CatalogRoute><CoursesPage /></CatalogRoute>} />
         <Route path="courses/:courseId" element={<CourseDetailPage />} />
       </Route>
 
@@ -169,11 +179,11 @@ function AppRoutes() {
           element={<PublicOnlyRoute><InstructorOnboarding /></PublicOnlyRoute>} />
       </Route>
 
-      {/* ── Payment (authenticated, any role) ── */}
+      {/* ── Payment (students only) ── */}
       <Route path="payment/return"
         element={<PaymentReturnPage />} />
       <Route path="payment/:courseId"
-        element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+        element={<ProtectedRoute allowedRoles={['student']}><PaymentPage /></ProtectedRoute>} />
 
       {/* ── Student Dashboard ── */}
       <Route path="dashboard"

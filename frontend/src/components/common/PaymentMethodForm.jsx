@@ -17,19 +17,17 @@ import { cn } from '@/lib/utils'
  *
  * The form validates all required fields before allowing Save.
  */
-const MOMO_PROVIDERS_GH = ['MTN MoMo', 'Vodafone Cash', 'AirtelTigo Money']
-const MOMO_PROVIDERS_NG = ['MTN', 'Airtel', '9mobile']
-const COUNTRIES = [
-  { code: 'GH', name: 'Ghana', currency: 'GHS', momo: MOMO_PROVIDERS_GH },
-  { code: 'NG', name: 'Nigeria', currency: 'NGN', momo: MOMO_PROVIDERS_NG },
-  { code: 'KE', name: 'Kenya', currency: 'KES', momo: ['M-Pesa', 'Airtel Money'] },
-  { code: 'ZA', name: 'South Africa', currency: 'ZAR', momo: ['MTN MoMo', 'Vodacom'] },
-  { code: 'OTHER', name: 'Other', currency: 'USD', momo: ['Other'] },
+// Payouts are sent through Paystack Ghana, so only Ghanaian accounts are supported.
+const MOMO_PROVIDERS_GH = [
+  { value: 'MTN MoMo',         label: 'MTN MoMo' },
+  { value: 'Vodafone Cash',    label: 'Telecel Cash (formerly Vodafone Cash)' },
+  { value: 'AirtelTigo Money', label: 'AirtelTigo Money' },
 ]
+const COUNTRY = 'GH'
 
 export function PaymentMethodForm({ value, onChange, onSave, showSaveButton = true, requireBefore = null }) {
   const [method, setMethod]   = useState(value?.method   || 'momo')
-  const [country, setCountry] = useState(value?.country  || 'GH')
+  const country = COUNTRY
   const [details, setDetails] = useState(value?.details  || {})
   const [saving, setSaving]   = useState(false)
   const [status, setStatus]   = useState(null) // {type, msg}
@@ -37,7 +35,6 @@ export function PaymentMethodForm({ value, onChange, onSave, showSaveButton = tr
   useEffect(() => {
     if (value) {
       setMethod(value.method || 'momo')
-      setCountry(value.country || 'GH')
       setDetails(value.details || {})
     }
   }, [value])
@@ -48,9 +45,6 @@ export function PaymentMethodForm({ value, onChange, onSave, showSaveButton = tr
 
   const changeMethod = (m) => {
     setMethod(m); setDetails({}); propagate(m, country, {})
-  }
-  const changeCountry = (c) => {
-    setCountry(c); propagate(method, c, details)
   }
   const setField = (k, v) => {
     const nd = { ...details, [k]: v }
@@ -82,7 +76,6 @@ export function PaymentMethodForm({ value, onChange, onSave, showSaveButton = tr
     }
   }
 
-  const cur = COUNTRIES.find(c => c.code === country) || COUNTRIES[0]
 
   return (
     <div className="space-y-4">
@@ -96,13 +89,10 @@ export function PaymentMethodForm({ value, onChange, onSave, showSaveButton = tr
       {/* Country */}
       <div className="space-y-2">
         <Label>Country</Label>
-        <select
-          value={country}
-          onChange={e => changeCountry(e.target.value)}
-          className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary outline-none"
-        >
-          {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
-        </select>
+        <div className="w-full h-10 flex items-center rounded-lg border border-input bg-muted/40 px-3 text-sm text-foreground">
+          Ghana (GHS)
+        </div>
+        <p className="text-xs text-muted-foreground">Payouts are currently available for Ghana mobile money and bank accounts only.</p>
       </div>
 
       {/* Method tabs */}
@@ -140,7 +130,7 @@ export function PaymentMethodForm({ value, onChange, onSave, showSaveButton = tr
               className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">— Select provider —</option>
-              {cur.momo.map(p => <option key={p} value={p}>{p}</option>)}
+              {MOMO_PROVIDERS_GH.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
           <div className="space-y-2">

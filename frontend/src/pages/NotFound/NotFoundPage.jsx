@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
+import { useAuth } from '../../context/AuthContext';
 
 export default function NotFoundPage() {
+  const { user, isAuthenticated } = useAuth();
+  const role = user?.role;
+  const secondary = !isAuthenticated || role === 'student'
+    ? { to: '/courses', label: 'Browse Courses' }
+    : ['admin', 'superadmin'].includes(role)
+      ? { to: '/admin', label: 'Admin Panel' }
+      : { to: '/instructor', label: 'My Dashboard' };
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center">
@@ -34,9 +42,9 @@ export default function NotFoundPage() {
               Go Home
             </Button>
           </Link>
-          <Link to="/courses">
+          <Link to={secondary.to}>
             <Button variant="outline" size="lg">
-              Browse Courses
+              {secondary.label}
             </Button>
           </Link>
         </div>

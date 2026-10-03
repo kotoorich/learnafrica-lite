@@ -96,9 +96,10 @@ export default function InstructorOnboarding() {
         <h1 className="text-2xl font-bold">Application Submitted!</h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
           Your instructor application is pending admin review. You'll be notified once it's
-          approved. In the meantime you can browse courses as a student.
+          approved. If you haven't added your payout method yet, add it on your Profile page; admins can
+          only approve applications that have one.
         </p>
-        <Button onClick={() => navigate('/courses')} className="w-full">Browse Courses</Button>
+        <Button onClick={() => navigate('/')} className="w-full">Back to Home</Button>
       </div>
     );
   }
