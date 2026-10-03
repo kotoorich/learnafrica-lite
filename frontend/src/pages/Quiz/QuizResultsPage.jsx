@@ -65,13 +65,11 @@ export function QuizResultsPage() {
   const { user }  = useAuth();
   const printRef  = useRef(null);
 
-  if (!state) { navigate(-1); return null; }
-
   const {
     answers, questions, score, correctCount, totalQuestions, passed,
     correctAnswers, courseId, lessonId, quizTitle,
     isFinalQuiz, hasCertificate,
-  } = state;
+  } = state || {};
 
   const [certData,    setCertData]    = useState(null);
   const [certLoading, setCertLoading] = useState(false);
@@ -97,6 +95,12 @@ export function QuizResultsPage() {
       .catch(e => setCertError(e.message))
       .finally(() => setCertLoading(false));
   }, [showCertSection, passed, courseId]);
+
+  useEffect(() => {
+    if (!state) navigate(-1);
+  }, [state, navigate]);
+
+  if (!state) return null;
 
   const handleDownload = () => {
     // Open the full certificate page for printing
