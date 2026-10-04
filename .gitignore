@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+__pycache__/
+.venv/
+venv/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env.local
+
+# Build output
+dist/
+build/
+*.egg-info/
+
+# Database & uploads (local dev only)
+instance/
+*.db
+*.sqlite
+*.sqlite3
+/data/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vite cache
+.vite/
