@@ -37,3 +37,18 @@ services:
         sync: false
       - key: SENDPULSE_SENDER_NAME
         sync: false
+
+      # Google OAuth (used for BOTH "Sign in with Google" and connecting the two
+      # Gmail senders). Create one OAuth 2.0 Web client in Google Cloud Console.
+      #   Authorised JavaScript origins : https://<your-frontend-domain>
+      #   Authorised redirect URIs      : https://<your-backend-domain>/api/admin/email/oauth/callback
+      # The frontend also needs VITE_GOOGLE_CLIENT_ID set to the SAME client ID
+      # on Vercel (the client ID is public, not a secret).
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      # Public base URL of THIS backend, so the OAuth callback returns to the
+      # right host behind Render's proxy (e.g. https://learnafrica-backend-hyae.onrender.com).
+      - key: BACKEND_URL
+        sync: false
