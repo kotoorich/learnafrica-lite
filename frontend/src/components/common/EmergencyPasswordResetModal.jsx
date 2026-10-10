@@ -8,8 +8,8 @@
  * front-end over a guarded endpoint, never the source of truth.
  */
 import { useState } from 'react';
-import { Button } from '@/components/common/Button';
 import { AlertTriangle, Loader2, ShieldAlert, X } from 'lucide-react';
+import { Button } from '@/components/common/Button';
 import { API_BASE } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
