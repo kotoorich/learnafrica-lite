@@ -75,7 +75,7 @@ async function registerBadge(badge) {
 export const BADGE_DESIGN_WIDTH = 700;
 export const BADGE_DESIGN_HEIGHT = 495; // 1.414:1 landscape ratio
 
-function BadgeDocument({ badge, displayName, badgeId, issuedDate, id = 'badge-content' }) {
+export function BadgeDocument({ badge, displayName, badgeId, issuedDate, id = 'badge-content' }) {
   const Icon = iconMap[badge.iconName] || Award;
   const [c1, c2] = badge.gradient || ['#0B3D2E', '#10B981'];
   const issued = issuedDate || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
