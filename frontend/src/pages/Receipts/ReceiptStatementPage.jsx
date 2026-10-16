@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Download, Printer, Loader2, CheckCircle2, XCircle,
-  Clock, AlertCircle, RotateCcw, FileText,
+  Clock, AlertCircle, RotateCcw, FileText, Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -52,6 +53,8 @@ export default function ReceiptStatementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -85,6 +88,32 @@ export default function ReceiptStatementPage() {
       showToast({ type: 'error', message: 'Could not create the statement PDF.' });
     } finally {
       setBusy('');
+    }
+  };
+
+  // Soft-delete: hides the statement from this account while the underlying
+  // payment record, provider reference and audit history are preserved.
+  const handleDelete = async () => {
+    if (deleting) return;              // guard against rapid / repeated taps
+    setDeleting(true);
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      const res = await fetch(`${API_BASE}/api/transactions/${encodeURIComponent(tid)}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Could not delete this statement.');
+      }
+      showToast({ type: 'success', message: 'Statement deleted.' });
+      setConfirmDelete(false);
+      navigate('/receipts', { replace: true });
+    } catch (e) {
+      showToast({ type: 'error', message: e.message || 'Could not delete this statement.' });
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -141,6 +170,10 @@ export default function ReceiptStatementPage() {
           </Button>
           <Button onClick={() => withPdf('download')} disabled={!!busy}>
             {busy === 'download' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />} Download PDF
+          </Button>
+          <Button variant="outline" onClick={() => setConfirmDelete(true)} disabled={deleting}
+            className="border-destructive/30 text-destructive hover:bg-destructive/10">
+            <Trash2 className="h-4 w-4 mr-2" /> Delete
           </Button>
         </div>
       </div>
@@ -223,6 +256,48 @@ export default function ReceiptStatementPage() {
           </p>
         </div>
       </Card>
+
+      {confirmDelete && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => !deleting && setConfirmDelete(false)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl bg-background border border-border shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <Trash2 className="h-7 w-7 text-destructive" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Delete this statement?</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                It will be removed from your statements. The payment record is kept
+                for the platform&apos;s financial history and cannot be recovered here.
+              </p>
+              <div className="flex flex-col w-full gap-3">
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="w-full h-11 inline-flex items-center justify-center rounded-lg bg-destructive text-destructive-foreground font-semibold hover:bg-destructive/90 disabled:opacity-60 transition-colors"
+                >
+                  {deleting ? 'Deleting…' : 'Yes, delete'}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setConfirmDelete(false)}
+                  className="w-full h-11 inline-flex items-center justify-center rounded-lg border border-border bg-background text-foreground font-semibold hover:bg-muted disabled:opacity-60 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
