@@ -35,7 +35,7 @@ import { shareText, linkedInShare, twitterShare, facebookShare, whatsappShare, e
 export const CERT_DESIGN_WIDTH = 900;
 export const CERT_DESIGN_HEIGHT = 636; // 1.414:1 landscape ratio
 
-function CertificateDocument({ data, displayName, id = 'certificate-content' }) {
+export function CertificateDocument({ data, displayName, id = 'certificate-content' }) {
   return (
     <div
       id={id}
@@ -57,26 +57,26 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
       <div className="absolute bottom-5 left-5 h-10 w-10 border-b-4 border-l-4 border-primary/60" />
       <div className="absolute bottom-5 right-5 h-10 w-10 border-b-4 border-r-4 border-primary/60" />
 
-      <div className="relative z-10 flex flex-col items-center px-12 py-10 text-center">
+      <div className="relative z-10 flex flex-col items-center px-12 py-8 text-center">
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">LearnAfrica Lite</p>
-        <h1 className="font-serif text-5xl font-bold uppercase tracking-[0.15em] text-slate-900">
+        <h1 className="font-serif text-4xl font-bold uppercase tracking-[0.1em] text-slate-900">
           Certificate of Completion
         </h1>
         <div className="mt-4 h-px w-48 bg-gradient-to-r from-transparent via-slate-400 to-transparent" />
-        <p className="mt-4 text-lg italic text-slate-600">
+        <p className="mt-2 text-base italic text-slate-600">
           Awarded in recognition of outstanding course completion
         </p>
 
-        <p className="mt-8 text-lg text-slate-700">This certifies that</p>
-        <h2 className="my-4 inline-block border-b-4 border-slate-900 px-16 pb-2 font-serif text-5xl font-bold leading-tight text-slate-900">
+        <p className="mt-5 text-base text-slate-700">This certifies that</p>
+        <h2 className="my-3 inline-block border-b-4 border-slate-900 px-14 pb-1 font-serif text-4xl font-bold leading-tight text-slate-900">
           {displayName}
         </h2>
-        <p className="text-lg text-slate-700">has successfully completed all course requirements for</p>
-        <h3 className="mt-3 max-w-3xl font-serif text-4xl font-bold leading-tight text-primary">
+        <p className="text-base text-slate-700">has successfully completed all course requirements for</p>
+        <h3 className="mt-2 max-w-3xl font-serif text-3xl font-bold leading-tight text-primary">
           {data.courseName}
         </h3>
 
-        <div className="mt-6 flex w-full items-center justify-between gap-10 px-8">
+        <div className="mt-4 flex w-full items-center justify-between gap-8 px-6">
           <div className="flex flex-1 flex-col items-center">
             <p className="w-56 border-b border-slate-900 pb-1 font-serif text-xl italic text-slate-900">
               {data.instructorName}
@@ -84,7 +84,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
             <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Course Instructor</p>
           </div>
           <div className="flex shrink-0 flex-col items-center">
-            <CertificateSeal size={108} />
+            <CertificateSeal size={96} />
           </div>
           <div className="flex flex-1 flex-col items-center">
             <p className="w-56 border-b border-slate-900 pb-1 text-xl font-semibold text-slate-900">
@@ -97,7 +97,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
         {/* Verification block — same pattern as the badge: a scannable QR, the
             certificate's verification code, and the public URL, grouped so they
             never overlap the name, course, date or seal. */}
-        <div className="mt-6 flex w-full items-center justify-between gap-6 border-t border-slate-200 pt-4 text-left">
+        <div className="mt-4 flex w-full items-center justify-between gap-6 border-t border-slate-200 pt-3 text-left">
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-600">
             <p className="font-bold text-slate-500">Certificate ID</p>
             <p className="mt-0.5 text-[11px] font-semibold text-slate-900">{data.certificateId}</p>
@@ -112,7 +112,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
                 title="Open the verification page"
                 className="inline-flex flex-col items-center group"
               >
-                <QRCodeSVG value={verifyUrl(data.certificateId)} size={92} level="Q" marginSize={2} bgColor="#ffffff" fgColor="#0f4d34" />
+                <QRCodeSVG value={verifyUrl(data.certificateId)} size={84} level="Q" marginSize={2} bgColor="#ffffff" fgColor="#0f4d34" />
                 <p className="mt-1 text-[7px] font-bold uppercase tracking-[0.2em] text-slate-400 group-hover:text-primary">Scan or click to verify</p>
               </a>
             )}
