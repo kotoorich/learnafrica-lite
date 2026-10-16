@@ -57,7 +57,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
       <div className="absolute bottom-5 left-5 h-10 w-10 border-b-4 border-l-4 border-primary/60" />
       <div className="absolute bottom-5 right-5 h-10 w-10 border-b-4 border-r-4 border-primary/60" />
 
-      <div className="relative z-10 flex flex-col items-center px-12 py-14 text-center">
+      <div className="relative z-10 flex flex-col items-center px-12 py-10 text-center">
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">LearnAfrica Lite</p>
         <h1 className="font-serif text-5xl font-bold uppercase tracking-[0.15em] text-slate-900">
           Certificate of Completion
@@ -76,7 +76,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
           {data.courseName}
         </h3>
 
-        <div className="mt-8 flex w-full items-center justify-between gap-10 px-8">
+        <div className="mt-6 flex w-full items-center justify-between gap-10 px-8">
           <div className="flex flex-1 flex-col items-center">
             <p className="w-56 border-b border-slate-900 pb-1 font-serif text-xl italic text-slate-900">
               {data.instructorName}
@@ -84,7 +84,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
             <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Course Instructor</p>
           </div>
           <div className="flex shrink-0 flex-col items-center">
-            <CertificateSeal size={116} />
+            <CertificateSeal size={108} />
           </div>
           <div className="flex flex-1 flex-col items-center">
             <p className="w-56 border-b border-slate-900 pb-1 text-xl font-semibold text-slate-900">
@@ -94,12 +94,15 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
           </div>
         </div>
 
-        <div className="mt-8 flex w-full items-center justify-between gap-6 border-t border-slate-200 pt-4 text-left">
-          <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-slate-500">
-            Certificate ID: {data.certificateId}
-            <br />
-            Verify at {siteHost()}/#verify-section
-          </p>
+        {/* Verification block — same pattern as the badge: a scannable QR, the
+            certificate's verification code, and the public URL, grouped so they
+            never overlap the name, course, date or seal. */}
+        <div className="mt-6 flex w-full items-center justify-between gap-6 border-t border-slate-200 pt-4 text-left">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-600">
+            <p className="font-bold text-slate-500">Certificate ID</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-slate-900">{data.certificateId}</p>
+            <p className="mt-1 normal-case tracking-normal text-slate-500">Verify at {siteHost()}/#verify-section</p>
+          </div>
           <div className="flex shrink-0 flex-col items-center">
             {data.certificateId && (
               <a
@@ -109,7 +112,7 @@ function CertificateDocument({ data, displayName, id = 'certificate-content' }) 
                 title="Open the verification page"
                 className="inline-flex flex-col items-center group"
               >
-                <QRCodeSVG value={verifyUrl(data.certificateId)} size={62} level="M" marginSize={0} bgColor="#ffffff" fgColor="#0f4d34" />
+                <QRCodeSVG value={verifyUrl(data.certificateId)} size={92} level="Q" marginSize={2} bgColor="#ffffff" fgColor="#0f4d34" />
                 <p className="mt-1 text-[7px] font-bold uppercase tracking-[0.2em] text-slate-400 group-hover:text-primary">Scan or click to verify</p>
               </a>
             )}
@@ -211,7 +214,7 @@ export default function CertificatePage() {
   const buildPdf = async () => {
     const el = document.getElementById('certificate-content');
     if (!el) throw new Error('Certificate preview is not on screen.');
-    return drawCapturedDocument({ element: el, orientation: 'landscape', marginMm: 0, scale: 3 });
+    return drawCapturedDocument({ element: el, orientation: 'landscape', marginMm: 6, scale: 3 });
   };
 
   const handleDownload = async () => {
@@ -263,18 +266,9 @@ export default function CertificatePage() {
           throw new Error(data.error || 'Certificate not found');
         }
         const cert = data.certificate;
-
-        if (token) {
-          try {
-            const issueRes = await fetch(`${API_BASE}/api/certificates/${courseId}/issue`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-            });
-            if (issueRes.ok) {
-              const issueData = await issueRes.json();
-              cert.certificateId = issueData.cert_id;
-            }
-          } catch {}
-        }
+        // The GET already returns the real, stored certificate id (it routes
+        // through the shared get_or_issue_certificate function), so there is no
+        // need to fire a second write call here.
         setCourseData(cert);
       } catch (err) {
         setError(err.message);
