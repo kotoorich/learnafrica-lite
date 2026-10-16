@@ -12,13 +12,13 @@ import {
   Award, Download, ExternalLink, Trophy, BookOpen, Target,
   Flame, Compass, CheckCircle2, Star, Zap, Loader2,
   ArrowRight, ArrowLeft, ChevronDown, ChevronUp, Book,
-  Eye, Pencil, Check, X
+  Eye, Pencil, Check, X, Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_BASE, publicFetch } from '@/lib/api';
 import { courseThumbnail } from '@/lib/courseThumbnail';
 import { siteHost, verifyUrl } from '@/lib/siteUrl';
-import { drawCapturedDocument, downloadPdf } from '@/lib/pdf';
+import { drawCapturedDocument, downloadPdf, printPdf } from '@/lib/pdf';
 import { QRCodeSVG } from 'qrcode.react';
 
 const ProgressCard = lazy(() => import('@/components/dashboard/ProgressCard'));
@@ -124,7 +124,7 @@ function BadgeDocument({ badge, displayName, badgeId, issuedDate, id = 'badge-co
               title="Open the verification page"
               className="shrink-0 rounded bg-white p-1"
             >
-              <QRCodeSVG value={verifyUrl(badgeId)} size={44} level="M" marginSize={0} bgColor="#ffffff" fgColor="#0B3D2E" />
+              <QRCodeSVG value={verifyUrl(badgeId)} size={80} level="Q" marginSize={2} bgColor="#ffffff" fgColor="#0B3D2E" />
             </a>
             <p className="text-left font-mono text-[8px] leading-tight tracking-[0.14em] text-emerald-50/60">
               ID: {badgeId}
@@ -247,6 +247,7 @@ function BadgePreviewModal({ badge, userName, onClose }) {
   }, [badge, userName]);
 
   const [downloading, setDownloading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -255,13 +256,27 @@ function BadgePreviewModal({ badge, userName, onClose }) {
       // same document the student just looked at — seal, QR and all.
       const el = document.getElementById('badge-content');
       if (!el) throw new Error('Badge preview is not on screen.');
-      const doc = await drawCapturedDocument({ element: el, orientation: 'landscape', marginMm: 0, scale: 3 });
+      const doc = await drawCapturedDocument({ element: el, orientation: 'landscape', marginMm: 6, scale: 3 });
       downloadPdf(doc, `learnafrica-badge-${(badge.key || 'achievement').toLowerCase()}.pdf`);
       showToast({ type: 'success', message: 'Badge downloaded as a PDF.' });
     } catch (e) {
       showToast({ type: 'error', message: 'Could not create the badge PDF. Please try again.' });
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    setPrinting(true);
+    try {
+      const el = document.getElementById('badge-content');
+      if (!el) throw new Error('Badge preview is not on screen.');
+      const doc = await drawCapturedDocument({ element: el, orientation: 'landscape', marginMm: 6, scale: 3 });
+      printPdf(doc);
+    } catch (e) {
+      showToast({ type: 'error', message: 'Could not prepare the badge for printing.' });
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -285,9 +300,14 @@ function BadgePreviewModal({ badge, userName, onClose }) {
           </ScaleToFit>
         </div>
         <div className="mt-4 flex flex-col items-center gap-2">
-          <Button onClick={handleDownload} className="w-full sm:w-auto px-8 gap-2">
-            <Download className="h-4 w-4" /> {downloading ? "Preparing…" : "Download Badge"}
-          </Button>
+          <div className="flex w-full sm:w-auto items-center justify-center gap-2">
+            <Button onClick={handleDownload} className="px-8 gap-2">
+              <Download className="h-4 w-4" /> {downloading ? "Preparing…" : "Download Badge"}
+            </Button>
+            <Button variant="outline" onClick={handlePrint} disabled={printing} className="px-6 gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20">
+              {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />} Print
+            </Button>
+          </div>
           <BadgeEditNameControl
             badgeKey={badge.key}
             currentName={nameInfo.badgeName}
