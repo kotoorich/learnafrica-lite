@@ -168,18 +168,44 @@ try {
             })()
           : true,
         // Image mode: an <img> signature is shown and the cursive text is gone.
-        signatureImage: name === 'certificate-image'
+        signatureImage: (name === 'certificate' || name === 'certificate-image')
           ? (() => {
-              const img = el.querySelector('img[alt*="signature" i]');
+              const img = el.querySelector('[data-cert-signature-image]');
               if (!img) return { present: false };
               const r2 = img.getBoundingClientRect();
-              const nameEl = [...el.querySelectorAll('p')].find(p => /Dr\. Test Signatory/.test(p.textContent));
+              const line = el.querySelector('[data-cert-signature-line]');
+              const lineRect = line.getBoundingClientRect();
+              const nameEl = el.querySelector('[data-cert-signatory-name]');
               const nameTop = nameEl ? nameEl.getBoundingClientRect().top : null;
               return { present: true, w: Math.round(r2.width), h: Math.round(r2.height),
                        natW: img.naturalWidth, natH: img.naturalHeight,
                        bottom: Math.round(r2.bottom), nameTop: nameTop != null ? Math.round(nameTop) : null,
                        overlapsName: nameTop != null ? r2.bottom > nameTop + 0.5 : false,
+                       withinLine: r2.top >= lineRect.top - 0.5 && r2.bottom <= lineRect.bottom + 0.5,
                        insideBox: r2.top >= r.top - 0.5 && r2.bottom <= r.bottom + 0.5 && r2.left >= r.left - 0.5 && r2.right <= r.right + 0.5 };
+            })()
+          : null,
+        // Layout order: the signature (text or image) sits ON the rule, with the
+        // printed display name BELOW the rule and the designation below that —
+        // matching how the Date Issued column is laid out.
+        signatoryOrder: name === 'certificate'
+          ? (() => {
+              const line = el.querySelector('[data-cert-signature-line]');
+              const text = el.querySelector('[data-cert-signature-text]');
+              const nameEl = el.querySelector('[data-cert-signatory-name]');
+              const roleEl = el.querySelector('[data-cert-signatory-role]');
+              if (!line || !text || !nameEl || !roleEl) return { complete: false };
+              const lr = line.getBoundingClientRect();
+              const tr = text.getBoundingClientRect();
+              const nr = nameEl.getBoundingClientRect();
+              const rr = roleEl.getBoundingClientRect();
+              return {
+                complete: true,
+                signatureAboveRule: tr.bottom <= lr.bottom + 1,
+                nameBelowRule: nr.top >= lr.bottom - 1,
+                roleBelowName: rr.top >= nr.bottom - 1,
+                nameBelowSignature: nr.top >= tr.bottom - 1,
+              };
             })()
           : null,
         showsCursiveTextInImageMode: name === 'certificate-image'
@@ -218,6 +244,11 @@ try {
       check('certificate: course instructor name is NOT shown', !d.hasInstructor);
       check('certificate: signature uses the cursive font', d.hasSignatureFont);
       check('certificate (text mode): cursive line shows the signature text "T. Sign"', d.hasSignatureText);
+      const o = d.signatoryOrder || {};
+      check('certificate: signature sits on the rule (above it)', o.complete && o.signatureAboveRule === true, JSON.stringify(o));
+      check('certificate: display name is below the rule', o.complete && o.nameBelowRule === true, JSON.stringify(o));
+      check('certificate: designation is below the name', o.complete && o.roleBelowName === true, JSON.stringify(o));
+      check('certificate: name is below the signature', o.complete && o.nameBelowSignature === true, JSON.stringify(o));
     }
     if (name === 'certificate-image') {
       const img = d.signatureImage || {};
@@ -231,6 +262,9 @@ try {
         img.present && img.overlapsName === false, `imgBottom=${img.bottom} nameTop=${img.nameTop}`);
       check('certificate (image mode): the image stays inside the document',
         img.present && img.insideBox === true);
+      check('certificate (image mode): the image sits on the rule, above the name',
+        img.present && img.withinLine === true && img.overlapsName === false,
+        `withinLine=${img.withinLine} overlapsName=${img.overlapsName}`);
     }
     // The strongest check: rasterise the real document the way the PDF download
     // does and confirm the QR's dark modules actually appear in that region.
