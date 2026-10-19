@@ -24,6 +24,18 @@ import {
   Phone, Mail, MapPin, Globe, FileText, History, ShieldAlert, PenTool, ShieldCheck
 } from 'lucide-react';
 
+
+// Human labels for instructor identity documents (keys match backend ID_TYPES).
+const ID_TYPE_LABELS = {
+  ghana_card: 'Ghana Card',
+  national_id: 'National ID',
+  voter_id: "Voter's ID",
+  passport: 'Passport',
+  drivers_license: "Driver's Licence",
+  other: 'Other government ID',
+};
+const idTypeLabel = (t) => ID_TYPE_LABELS[t] || 'Ghana Card';
+
 const API = async (endpoint, options = {}) => {
   const token = sessionStorage.getItem('auth_token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -667,11 +679,11 @@ export default function AdminPage() {
                           {app.website && <a href={app.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">🔗 Website</a>}
                           <span>Applied: {app.applied_at?.slice(0,10)}</span>
                         </div>
-                        {(app.ghana_card_number || app.ghana_post_gps) && (
+                        {(app.id_number || app.ghana_card_number || app.ghana_post_gps) && (
                           <div className="flex flex-wrap gap-3 text-xs font-medium">
-                            {app.ghana_card_number && (
+                            {(app.id_number || app.ghana_card_number) && (
                               <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1">
-                                🪪 Ghana Card: <span className="font-mono">{app.ghana_card_number}</span>
+                                🪪 {idTypeLabel(app.id_type)}: <span className="font-mono">{app.id_number || app.ghana_card_number}</span>
                               </span>
                             )}
                             {app.ghana_post_gps && (
@@ -1207,15 +1219,15 @@ export default function AdminPage() {
 
               {/* Instructor identity verification — Ghana Card + GPS, admin-only */}
               {selectedUser.role === 'instructor' &&
-                (selectedUser.ghana_card_number || selectedUser.ghana_post_gps) && (
+                (selectedUser.id_number || selectedUser.ghana_card_number || selectedUser.ghana_post_gps) && (
                 <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
                   <p className="text-sm font-semibold flex items-center gap-1">
                     <ShieldCheck className="h-4 w-4 text-primary" /> Identity Verification
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground w-24 shrink-0">Ghana Card</span>
-                      <span className="font-mono">{selectedUser.ghana_card_number || '—'}</span>
+                      <span className="text-xs text-muted-foreground w-24 shrink-0">{idTypeLabel(selectedUser.id_type)}</span>
+                      <span className="font-mono">{selectedUser.id_number || selectedUser.ghana_card_number || '—'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-24 shrink-0">GhanaPost GPS</span>
