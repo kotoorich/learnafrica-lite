@@ -75,7 +75,7 @@ export function InstructorProfileFields({
     <div className="space-y-5">
       {/* ── Country ── */}
       <div className="space-y-2">
-        <Label htmlFor="country">Country</Label>
+        <Label htmlFor="country" required>Country</Label>
         <div className="relative">
           <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <select
@@ -85,7 +85,9 @@ export function InstructorProfileFields({
             onChange={(e) => onChange({ country: e.target.value, id_type: '', id_number: '',
                                          region: '', district: '', city: '', street_address: '',
                                          postal_code: '', digital_address: '' })}
-            className={cn(selectClass, 'pl-10', lockIdentity && 'opacity-70 cursor-not-allowed')}
+            aria-invalid={errors.country ? true : undefined}
+            className={cn(selectClass, 'pl-10', lockIdentity && 'opacity-70 cursor-not-allowed',
+              errors.country && 'border-destructive focus-visible:ring-destructive')}
           >
             <option value="">Select your country…</option>
             {(config?.countries || []).map((c) => (
@@ -103,7 +105,7 @@ export function InstructorProfileFields({
       {country && (
         <>
           <div className="space-y-2">
-            <Label htmlFor="id_type">Identification type</Label>
+            <Label htmlFor="id_type" required>Identification type</Label>
             <div className="relative">
               <IdCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <select
@@ -111,7 +113,9 @@ export function InstructorProfileFields({
                 value={idType}
                 disabled={lockIdentity}
                 onChange={(e) => onChange({ id_type: e.target.value, id_number: '' })}
-                className={cn(selectClass, 'pl-10', lockIdentity && 'opacity-70 cursor-not-allowed')}
+                aria-invalid={errors.id_type ? true : undefined}
+                className={cn(selectClass, 'pl-10', lockIdentity && 'opacity-70 cursor-not-allowed',
+                  errors.id_type && 'border-destructive focus-visible:ring-destructive')}
               >
                 <option value="">Choose a document…</option>
                 {idTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -123,7 +127,7 @@ export function InstructorProfileFields({
           {idType && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="id_number">Identification number</Label>
+                <Label htmlFor="id_number" required>Identification number</Label>
                 <div className="relative">
                   <IdCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -136,6 +140,7 @@ export function InstructorProfileFields({
                       if (n && n !== idNumber) onChange({ id_number: n })
                     }}
                     placeholder={country === 'GH' && idType === 'ghana_card' ? 'GHA-123456789-0' : 'Enter the number on the document'}
+                    invalid={!!errors.id_number}
                     className={cn('pl-10', lockIdentity && 'opacity-70 cursor-not-allowed')}
                   />
                 </div>
@@ -144,7 +149,7 @@ export function InstructorProfileFields({
 
               {!lockIdentity && (
                 <div className="space-y-2">
-                  <Label htmlFor="id_confirm">Re-enter identification number</Label>
+                  <Label htmlFor="id_confirm" required>Re-enter identification number</Label>
                   <div className="relative">
                     <Check className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -185,7 +190,8 @@ export function InstructorProfileFields({
                   id="region"
                   value={value.region || ''}
                   onChange={(e) => onChange({ region: e.target.value })}
-                  className={selectClass}
+                  aria-invalid={errors.region ? true : undefined}
+                  className={cn(selectClass, errors.region && 'border-destructive focus-visible:ring-destructive')}
                 >
                   <option value="">Select…</option>
                   {subdivisions.map((s) => <option key={s.code} value={s.name}>{s.name}</option>)}
@@ -193,6 +199,7 @@ export function InstructorProfileFields({
               ) : (
                 <Input id="region" value={value.region || ''}
                   onChange={(e) => onChange({ region: e.target.value })}
+                  invalid={!!errors.region}
                   placeholder="Type your region" />
               )}
               {!hasSubdivisions && <Hint>We do not have a verified list for this country, so please type it.</Hint>}
@@ -204,41 +211,45 @@ export function InstructorProfileFields({
                 placeholder="Type your district" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">City / locality</Label>
+              <Label htmlFor="city" required>City / locality</Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input id="city" value={value.city || ''}
                   onChange={(e) => onChange({ city: e.target.value })}
+                  invalid={!!errors.city}
                   placeholder="Type your city or town" className="pl-10" />
               </div>
               <FieldError>{errors.city}</FieldError>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="postal_code">
+              <Label htmlFor="postal_code" required={postalRequired}>
                 Postal code{postalRequired ? '' : ' (optional)'}
               </Label>
               <Input id="postal_code" value={value.postal_code || ''}
                 onChange={(e) => onChange({ postal_code: e.target.value.toUpperCase() })}
+                invalid={!!errors.postal_code}
                 placeholder={postalRequired ? 'Required for this country' : 'If your country uses one'} />
               <FieldError>{errors.postal_code}</FieldError>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="street_address">Street address</Label>
+            <Label htmlFor="street_address" required>Street address</Label>
             <Input id="street_address" value={value.street_address || ''}
               onChange={(e) => onChange({ street_address: e.target.value })}
+              invalid={!!errors.street_address}
               placeholder="House number and street" />
             <FieldError>{errors.street_address}</FieldError>
           </div>
 
           {digital && (
             <div className="space-y-2">
-              <Label htmlFor="digital_address">{digital.label}</Label>
+              <Label htmlFor="digital_address" required>{digital.label}</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input id="digital_address" value={value.digital_address || ''}
                   onChange={(e) => onChange({ digital_address: e.target.value.toUpperCase() })}
+                  invalid={!!errors.digital_address}
                   placeholder={digital.placeholder} className="pl-10" />
               </div>
               <Hint>Find yours in the GhanaPost GPS app.</Hint>
@@ -251,6 +262,7 @@ export function InstructorProfileFields({
               <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input id="phone" value={value.phone || ''}
                 onChange={(e) => onChange({ phone: e.target.value })}
+                invalid={!!errors.phone}
                 placeholder="Include your country code, e.g. +233… or +1…" className="pl-10" />
             </div>
             <FieldError>{errors.phone}</FieldError>
