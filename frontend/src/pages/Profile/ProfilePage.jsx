@@ -10,6 +10,7 @@ import { Input } from '../../components/common/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/common/Card';
 import { PaymentMethodForm } from '@/components/common/PaymentMethodForm';
 import { PhoneField } from '@/components/common/PhoneField';
+import { fetchCountryConfig, idTypesFor, countryName } from '@/lib/countries';
 import { cn } from '@/lib/utils';
 import { API_BASE } from '@/lib/api';
 import { formatPrice } from '@/lib/money';
@@ -19,6 +20,27 @@ const authedFetch = (url) => {
   const token = sessionStorage.getItem('auth_token');
   return fetch(`${API_BASE}${url}`, { headers: { Authorization: `Bearer ${token}` } });
 };
+
+// ── Read-only identity display ────────────────────────────────────────────────
+function IdentityField({ label, value }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">{label}</p>
+      <p className="text-sm text-foreground break-words">{value || '—'}</p>
+    </div>
+  );
+}
+
+// Address + phone may be updated later; country and ID number are locked.
+const IDENTITY_EDIT_FIELDS = [
+  { key: 'region', label: 'Region / State' },
+  { key: 'district', label: 'District' },
+  { key: 'city', label: 'City / Locality' },
+  { key: 'postal_code', label: 'Postal code' },
+  { key: 'street_address', label: 'Street address' },
+  { key: 'digital_address', label: 'Digital address' },
+  { key: 'phone', label: 'Phone' },
+];
 
 // ── Role-aware stat tiles ─────────────────────────────────────────────────────
 function useRoleStats(role, sharedUserStats) {
@@ -144,6 +166,36 @@ export default function ProfilePage() {
   });
   // Payment method state (instructors + admins receive payouts here)
   const [paymentMethod, setPaymentMethod] = useState(null);
+  // Read-only identity & verification details (instructors + admins).
+  const [identity, setIdentity] = useState(null);
+  const [identityLoading, setIdentityLoading] = useState(false);
+  const [countryCfg, setCountryCfg] = useState(null);
+  const [identityEdit, setIdentityEdit] = useState(false);
+  const [identitySaving, setIdentitySaving] = useState(false);
+  const [identityError, setIdentityError] = useState('');
+  const [identityForm, setIdentityForm] = useState({
+    region: '', district: '', city: '', street_address: '', postal_code: '', digital_address: '', phone: '',
+  });
+
+  const loadIdentity = useCallback(async () => {
+    if (!(role === 'instructor' || role === 'admin' || role === 'superadmin')) return;
+    setIdentityLoading(true);
+    try {
+      const res = await authedFetch('/api/instructor/profile');
+      if (res.ok) {
+        const data = await res.json();
+        setIdentity(data.profile || null);
+      }
+    } catch { /* silent - the section simply stays hidden */ }
+    finally { setIdentityLoading(false); }
+  }, [role]);
+
+  useEffect(() => {
+    if (role === 'instructor' || role === 'admin' || role === 'superadmin') {
+      loadIdentity();
+      fetchCountryConfig().then(setCountryCfg).catch(() => {});
+    }
+  }, [role, loadIdentity]);
   useEffect(() => {
     if (role !== 'instructor' && role !== 'admin' && role !== 'superadmin') return;
     let cancelled = false;
@@ -153,6 +205,44 @@ export default function ProfilePage() {
       .catch(() => { /* silent */ });
     return () => { cancelled = true; };
   }, [role]);
+
+  const openIdentityEdit = useCallback(() => {
+    if (!identity) return;
+    setIdentityForm({
+      region: identity.region || '', district: identity.district || '',
+      city: identity.city || '', street_address: identity.street_address || '',
+      postal_code: identity.postal_code || '', digital_address: identity.digital_address || '',
+      phone: identity.phone || '',
+    });
+    setIdentityError('');
+    setIdentityEdit(true);
+  }, [identity]);
+
+  const saveIdentity = useCallback(async () => {
+    setIdentityError('');
+    setIdentitySaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/instructor/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('auth_token')}`,
+        },
+        body: JSON.stringify(identityForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setIdentityError(data.error || 'Could not save. Please check the details and try again.');
+        return;
+      }
+      await loadIdentity();
+      setIdentityEdit(false);
+    } catch {
+      setIdentityError('Could not save. Please try again.');
+    } finally {
+      setIdentitySaving(false);
+    }
+  }, [identityForm, loadIdentity]);
 
   const savePaymentMethod = async (next) => {
     const token = sessionStorage.getItem('auth_token');
@@ -225,6 +315,11 @@ export default function ProfilePage() {
     admin:      'Admin',
     superadmin: 'Super Admin',
   }[role] || 'Member';
+
+  const identityIdTypeLabel = identity?.id_type
+    ? (idTypesFor(countryCfg, identity.country).find((t) => t.value === identity.id_type)?.label || identity.id_type)
+    : '';
+  const showIdentity = role === 'instructor' || role === 'admin' || role === 'superadmin';
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-10 space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -392,6 +487,93 @@ export default function ProfilePage() {
               </form>
             </CardContent>
           </Card>
+
+          {/* ── IDENTITY & VERIFICATION (read-only; country + ID are locked) ── */}
+          {showIdentity && (
+            <Card className="w-full bg-card border-border flex flex-col shadow-sm">
+              <CardHeader className="py-4 px-5 md:px-6 border-b border-border flex flex-row items-center justify-between bg-primary/[0.01]">
+                <CardTitle className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary">Identity &amp; Verification</CardTitle>
+                {identity && !identityEdit && (
+                  <button type="button" onClick={openIdentityEdit}
+                    className="bg-primary text-primary-foreground text-[10px] md:text-[11px] font-bold uppercase tracking-widest px-4 md:px-6 h-9 md:h-10 rounded-lg shadow-md shadow-primary/20">
+                    Update address / phone
+                  </button>
+                )}
+              </CardHeader>
+              <CardContent className="p-5 md:p-6 lg:p-7">
+                {identityLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading your details…</p>
+                ) : !identity || !identity.country ? (
+                  <p className="text-sm text-muted-foreground">
+                    You have not submitted your identity details yet.
+                  </p>
+                ) : identityEdit ? (
+                  <div className="space-y-5">
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      {IDENTITY_EDIT_FIELDS.map((f) => (
+                        <div key={f.key} className="space-y-1">
+                          <label htmlFor={`identity-${f.key}`}
+                            className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">
+                            {f.label}
+                          </label>
+                          {f.key === 'phone' ? (
+                            <PhoneField
+                              id={`identity-${f.key}`}
+                              name={f.key}
+                              value={identityForm[f.key]}
+                              onChange={(e) => setIdentityForm((p) => ({ ...p, [f.key]: e.target.value }))}
+                              placeholder="244 123 456"
+                            />
+                          ) : (
+                            <Input
+                              id={`identity-${f.key}`}
+                              value={identityForm[f.key]}
+                              onChange={(e) => setIdentityForm((p) => ({ ...p, [f.key]: e.target.value }))}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {identityError && (
+                      <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{identityError}</div>
+                    )}
+                    <div className="flex gap-3">
+                      <Button onClick={saveIdentity} disabled={identitySaving}>
+                        {identitySaving ? 'Saving…' : 'Save changes'}
+                      </Button>
+                      <Button variant="outline" onClick={() => { setIdentityEdit(false); setIdentityError(''); }} disabled={identitySaving}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <IdentityField label="Country" value={countryName(countryCfg, identity.country)} />
+                      <IdentityField label="Identification type" value={identityIdTypeLabel} />
+                      <IdentityField label="Identification number" value={identity.id_number_masked || (identity.id_number_set ? 'Provided' : '—')} />
+                      <IdentityField label="Region / State" value={identity.region} />
+                      <IdentityField label="District" value={identity.district} />
+                      <IdentityField label="City / Locality" value={identity.city} />
+                      <IdentityField label="Street address" value={identity.street_address} />
+                      <IdentityField label="Postal code" value={identity.postal_code} />
+                      <IdentityField label="Digital address" value={identity.digital_address} />
+                      <IdentityField label="Phone" value={identity.phone} />
+                      <IdentityField label="Status" value={identity.status || identity.instructor_status} />
+                    </div>
+                    <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
+                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <p className="text-[11px] text-muted-foreground">
+                        Your country and identification number are locked after submission and cannot be
+                        changed here — contact support if they need correcting. You can update your address
+                        and phone with the button above. These details are never shown on your public profile.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── PAYMENT METHOD (for instructors and admins who receive payouts) ── */}
           {(role === 'instructor' || role === 'admin' || role === 'superadmin') && (
